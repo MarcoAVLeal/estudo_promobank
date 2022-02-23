@@ -957,122 +957,120 @@ p_dist <- ggplot(cf_matrix, aes(x = Valor.Beneficio, y = RENDAPRESUMIDA, fill = 
 
 
 
-renderPlotly({
+renderPlot({
   
-ggplotly(p_dist,height = 640)
+p_dist
   
 })
 
 
 
 
-
 ```
 
-
+# Acumulado
 
 ```{r,echo=FALSE,include=FALSE}
 
 # df_score$PREDICT <- 1-(df_score$SCORE/1000)
 # df_score$PREDICT_INV <- (df_score$SCORE/1000)
-# df_bons <- df_score %>% filter(Sinistro6 == 0)
-# df_maus <- df_score %>% filter(Sinistro6 == 1)
-# 
-# 
-# seq_score <- seq(0,1,0.01)
-# 
-# v_bons <- df_bons %>% dplyr::arrange(PREDICT) %>% dplyr::select(PREDICT)
-# v_maus <- df_maus %>% dplyr::arrange(PREDICT) %>% dplyr::select(PREDICT)
-# cumvalbom <- c()
-# for(i  in 1:length(seq_score)){
-#   
-#  cumvalbom[i] <- ( (v_bons < seq_score[i]) %>% mean)
-#   
-#   
-# }
-# cumvalmau <- c()
-# for(i  in 1:length(seq_score)){
-#   
-#   cumvalmau[i] <- ( (v_maus < seq_score[i]) %>% mean)
-#   
-#   
-# }
-# 
-# df_acumulado <- data.frame(SCORE = seq_score,`Acumulado Bom` = cumvalbom,`Acumulado Mau` = cumvalmau)
-# 
+df_bons <- df$Valor.Benefício
+df_maus <- df$RENDAPRESUMIDA
+
+seq_score <- eq(0,15500,1)
+
+v_bons <- df_bons %>% sort
+v_maus <- df_maus %>% sort
+cumvalbom <- c()
+for(i  in 1:length(seq_score)){
+
+ cumvalbom[i] <- ( (v_bons < seq_score[i]) %>% mean)
+
+
+}
+cumvalmau <- c()
+for(i  in 1:length(seq_score)){
+
+  cumvalmau[i] <- ( (v_maus < seq_score[i]) %>% mean)
+
+
+}
+ 
+df_acumulado <- data.frame(SCORE = seq_score,`Acumulado Bom` = cumvalbom,`Acumulado Mau` = cumvalmau)
+
 # v_bons <- df_bons %>% dplyr::arrange(PREDICT_INV) %>% dplyr::select(PREDICT_INV)
 # v_maus <- df_maus %>% dplyr::arrange(PREDICT_INV) %>% dplyr::select(PREDICT_INV)
 # cumvalbom <- c()
 # for(i  in 1:length(seq_score)){
-#   
+# 
 #   cumvalbom[i] <- ( (v_bons < seq_score[i]) %>% mean)
-#   
-#   
+# 
+# 
 # }
 # cumvalmau <- c()
 # for(i  in 1:length(seq_score)){
-#   
+# 
 #   cumvalmau[i] <- ( (v_maus < seq_score[i]) %>% mean)
-#   
-#   
+# 
+# 
 # }
 # 
 # df_acumulado$`Acumulado Bom_Inv` <- cumvalbom
 # df_acumulado$`Acumulado Mau_Inv` <- cumvalmau
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# #df_melt <- df_acumulado %>% reshape2::melt(id.vars = "SCORE",measure.vars = c("Acumulado Bom_Inv","Acumulado Mau_Inv"),value.name = "Acumulado (%)",variable.name= "Legenda")
-# 
-# 
-# 
-# # p2 <- ggplot(data = df_melt)+
-# #   geom_line(size = 1.2, alpha = 0.75,aes(x= SCORE, y = `Acumulado (%)`, color = Legenda))+
-# #   scale_color_manual(values = c("darkgreen", "darkred"))+
-# #   scale_x_continuous(breaks = seq(0,1,0.05))+
-# #   scale_y_continuous(breaks = seq(0,1,0.1))+
-# #   axis.theme(title_size = 12,textsize = 12,pos_leg = "bottom",x.angle = 45,vjust = 1,hjust=1);p2
-# 
-# 
-# 
-# 
-# 
-# df_acumulado$Diff_Acumulado = abs(df_acumulado$Acumulado.Bom - df_acumulado$Acumulado.Mau)
-# df_acumulado$Diff_Acumulado_Inv = abs(df_acumulado$Acumulado.Bom - (1-df_acumulado$Acumulado.Mau))
-# df_acumulado$max_diff       = max(df_acumulado$Diff_Acumulado)
-# df_acumulado$cutoff         = df_acumulado$SCORE[which.max(df_acumulado$Diff_Acumulado)]
-# df_acumulado$maxbom         = df_acumulado$Acumulado.Bom[which.max(df_acumulado$Diff_Acumulado)]
-# df_acumulado$maxmau         = df_acumulado$Acumulado.Mau[which.max(df_acumulado$Diff_Acumulado)]
-# df_acumulado$cutoff_balanced       = df_acumulado$SCORE[which.min(df_acumulado$Diff_Acumulado_Inv)]
-# 
-# df_melt <- df_acumulado %>% reshape2::melt(id.vars = "SCORE",measure.vars = c("Acumulado.Bom","Acumulado.Mau","Diff_Acumulado"),value.name = "Acumulado (%)",variable.name= "Legenda")
-# 
-# p1 <- ggplot(data = df_melt)+
+
+
+
+
+
+
+
+#df_melt <- df_acumulado %>% reshape2::melt(id.vars = "SCORE",measure.vars = c("Acumulado Bom_Inv","Acumulado Mau_Inv"),value.name = "Acumulado (%)",variable.name= "Legenda")
+
+
+
+# p2 <- ggplot(data = df_melt)+
 #   geom_line(size = 1.2, alpha = 0.75,aes(x= SCORE, y = `Acumulado (%)`, color = Legenda))+
-#   scale_color_manual(values = c("darkgreen", "darkred","darkblue"))+
+#   scale_color_manual(values = c("darkgreen", "darkred"))+
 #   scale_x_continuous(breaks = seq(0,1,0.05))+
 #   scale_y_continuous(breaks = seq(0,1,0.1))+
-#   axis.theme(title_size = 12,textsize = 12,pos_leg = "bottom",x.angle = 45,vjust = 1,hjust=1)+  
-#   geom_vline(xintercept = df_acumulado$cutoff, 
-#                           linetype = "dashed", colour = "red", alpha = 0.75) +
-#   geom_segment(aes(x = max(df_acumulado$cutoff), 
-#                    y = max(df_acumulado$maxmau), 
-#                    xend = max(df_acumulado$cutoff),
-#                    yend = max(df_acumulado$maxbom)),color = "red",size=1.2) + 
-#   geom_segment(aes(x = max(df_acumulado$cutoff),
-#                    y = max(df_acumulado$maxmau) + max(df_acumulado$max_diff)/2, 
-#                    xend = max(df_acumulado$cutoff)+0.1,
-#                    yend = max(df_acumulado$maxmau) + max(df_acumulado$max_diff)/2),
-#                arrow = arrow(length = unit(0.5, "cm")))+
-#   annotate(geom="text", x = df_acumulado$cutoff+0.15,
-#            y = max(df_acumulado$maxmau) + max(df_acumulado$max_diff)/2, label=paste0("KS.: ",round(df_acumulado$max_diff,3),"\nCutoff:",df_acumulado$cutoff),
-#            color="black") 
-# 
-# p1
+#   axis.theme(title_size = 12,textsize = 12,pos_leg = "bottom",x.angle = 45,vjust = 1,hjust=1);p2
+
+
+df_acumulado$Acumulado.Bom
+
+
+df_acumulado$Diff_Acumulado = abs(df_acumulado$Acumulado.Bom - df_acumulado$Acumulado.Mau)
+#df_acumulado$Diff_Acumulado_Inv = abs(df_acumulado$Acumulado.Bom - (1-df_acumulado$Acumulado.Mau))
+df_acumulado$max_diff       = max(df_acumulado$Diff_Acumulado)
+df_acumulado$cutoff         = df_acumulado$SCORE[which.max(df_acumulado$Diff_Acumulado)]
+df_acumulado$maxbom         = df_acumulado$Acumulado.Bom[which.max(df_acumulado$Diff_Acumulado)]
+df_acumulado$maxmau         = df_acumulado$Acumulado.Mau[which.max(df_acumulado$Diff_Acumulado)]
+#df_acumulado$cutoff_balanced       = df_acumulado$SCORE[which.min(df_acumulado$Diff_Acumulado_Inv)]
+
+df_melt <- df_acumulado %>% reshape2::melt(id.vars = "SCORE",measure.vars = c("Acumulado.Bom","Acumulado.Mau","Diff_Acumulado"),value.name = "Acumulado (%)",variable.name= "Legenda")
+
+p1 <- ggplot(data = df_melt)+
+  geom_line(size = 1.2, alpha = 0.75,aes(x= SCORE, y = `Acumulado (%)`, color = Legenda))+
+  scale_color_manual(values = c("darkgreen", "darkred","darkblue"))+
+  scale_x_continuous(breaks = seq(0,1*15500,0.05*15500))+
+  scale_y_continuous(breaks = seq(0,1,0.1))+
+  axis.theme(title_size = 12,textsize = 12,pos_leg = "bottom",x.angle = 45,vjust = 1,hjust=1)+
+  geom_vline(xintercept = df_acumulado$cutoff,
+                          linetype = "dashed", colour = "red", alpha = 0.75) +
+  geom_segment(aes(x = max(df_acumulado$cutoff),
+                   y = max(df_acumulado$maxmau),
+                   xend = max(df_acumulado$cutoff),
+                   yend = max(df_acumulado$maxbom)),color = "red",size=1.2) +
+  geom_segment(aes(x = max(df_acumulado$cutoff),
+                   y = max(df_acumulado$maxmau) + max(df_acumulado$max_diff)/2,
+                   xend = max(df_acumulado$cutoff)+0.1,
+                   yend = max(df_acumulado$maxmau) + max(df_acumulado$max_diff)/2),
+               arrow = arrow(length = unit(0.5, "cm")))+
+  annotate(geom="text", x = df_acumulado$cutoff+0.15,
+           y = max(df_acumulado$maxmau) + max(df_acumulado$max_diff)/2, label=paste0("KS.: ",round(df_acumulado$max_diff,3),"\nCutoff:",df_acumulado$cutoff),
+           color="black")
+
+p1
 
 
 
@@ -1082,7 +1080,17 @@ ggplotly(p_dist,height = 640)
 
 # KS
 
+```{r,echo=FALSE}
 
+ks <- ks.test(x = df$Valor.Benefício,y = df$RENDAPRESUMIDA)
+
+ renderUI({
+       
+        p(ks$p.value,br(), " Teste Kolmogorov-Smirnov",style="color:#273658;text-align:center;font-weight:bold;font-size:30px")
+        
+      })
+
+```
 Aqui sera apresentado o teste de kS.
 
 
