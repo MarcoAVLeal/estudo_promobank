@@ -1,0 +1,993 @@
+---
+title: "Estudo PromoBank"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+runtime: shiny
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(stringr)
+library(dplyr)
+library(arules)
+library(tidyr)
+library(shiny)
+library(highcharter)
+library(shinythemes)
+library(DT)
+library(readxl)
+library(highcharter)
+library(stringr)
+library(tidyverse)
+library(RColorBrewer)
+library(shinyWidgets)
+library(viridis)
+library(rdrop2)
+library(plotly)
+
+
+
+
+path = "D:\\OneDrive - Crefaz Financiamentos e Investimentos\\Paineis BI\\Relatorios\\PROMOBANK\\crefaz_aposentados_backtest - higienizada_jan_2022.csv"
+
+dataframe <- read.csv(file = "C:\\Users\\marco\\OneDrive - Crefaz Financiamentos e Investimentos\\Paineis BI\\Relatorios\\PROMOBANK\\crefaz_aposentados_backtest - higienizada_jan_2022.csv",sep = ";",header = TRUE,encoding = 'utf-8')
+
+df_rd_spc <- read.csv(file = "C:\\Users\\marco\\OneDrive - Crefaz Financiamentos e Investimentos\\Paineis BI\\Relatorios\\PROMOBANK\\renda_pres_spc_2022.csv",sep = ",",header = TRUE,encoding = 'utf-8')
+colnames(df_rd_spc)[1] <- "RENDAPRESUMIDA"
+
+dataframe <- dataframe %>% dplyr::distinct(CPF,`Espécie`,Dat..Nascimento,Cidade,Valor.Benefício,Líquido,.keep_all  = TRUE)
+
+dataframe <- inner_join(x = dataframe,y = df_rd_spc,by = c("CPF"="CPFCNPJ"),)
+
+df_rd_spc$CPFCNPJ <- as.character(df_rd_spc$CPFCNPJ)
+
+df_rd_spc %>% dplyr::group_by(CPFCNPJ) %>% dplyr::summarise(n()) %>% dplyr::arrange(desc(`n()`))
+
+dataframe <- dataframe %>% dplyr::distinct(CPF,`Espécie`,Dat..Nascimento,Cidade,Valor.Benefício,Líquido,.keep_all  = TRUE)
+
+chars_p = c("R\\$", " ", "\\." , ",")
+chars_r = c(  "",    "", "",   "." )
+for (i in 1:length(chars_p)){
+  
+  dataframe$Líquido             = str_replace(string = dataframe$Líquido,pattern = chars_p[i],replacement = chars_r[i])
+  
+  dataframe$Margem.Consignável  = str_replace(string = dataframe$Margem.Consignável ,pattern = chars_p[i],replacement = chars_r[i])
+  dataframe$Valor.Consignado    = str_replace(string = dataframe$Valor.Consignado ,pattern = chars_p[i],replacement = chars_r[i])
+  dataframe$Margem.Disponível   = str_replace(string = dataframe$Margem.Disponível ,pattern = chars_p[i],replacement = chars_r[i])
+  
+}
+
+dataframe$Líquido               =     dataframe$Líquido                  %>% as.numeric 
+dataframe$Margem.Consignável    =     dataframe$Margem.Consignável       %>% as.numeric 
+dataframe$Valor.Consignado      =     dataframe$Valor.Consignado         %>% as.numeric 
+dataframe$Margem.Disponível     =     dataframe$Margem.Disponível        %>% as.numeric 
+#dataframe$Valor.Parcela        = str_replace(string = dataframe$Valor.Parcela ,pattern = chars_p[i],replacement = chars_r[i])          %>% as.numeric 
+
+
+
+dataframe$Margem.Consignável %>% range(na.rm = TRUE)
+
+pos                             <- dataframe$Valor.Benefício %>% str_detect(pattern = "@") %>% which
+dataframe$Valor.Benefício[pos]  <- dataframe$Margem.Consignável[pos]/0.35
+
+pos                             <- dataframe$Uso.do.RMC %>% str_detect(pattern = "SIM|NAO") %>% which
+aux                             <- dataframe$Uso.do.RMC[pos]
+dataframe$Uso.do.RMC[pos]       <- dataframe$RMC[pos]
+dataframe$RMC[pos]              <- aux
+
+for (i in 1:length(chars_p)){
+  
+  dataframe$Uso.do.RMC          = str_replace(string = dataframe$Uso.do.RMC ,pattern = chars_p[i],replacement = chars_r[i])
+  dataframe$Valor.Benefício     = str_replace(string = dataframe$Valor.Benefício ,pattern = chars_p[i],replacement = chars_r[i])
+ # dataframe$Valor.Parcela      = str_replace(string = dataframe$Valor.Parcela ,pattern = chars_p[i],replacement = chars_r[i])
+  
+}
+
+dataframe$Valor.Benefício       = str_replace(string = dataframe$Valor.Benefício ,pattern = chars_p[i],replacement = chars_r[i])        %>% as.numeric 
+dataframe$Uso.do.RMC            = str_replace(string = dataframe$Uso.do.RMC ,pattern = chars_p[i],replacement = chars_r[i])             %>% as.numeric 
+
+dataframe$Margem.Consignável    =     dataframe$Margem.Consignável    %>% replace_na(0)
+dataframe$Líquido               =     dataframe$Líquido               %>% replace_na(0)
+dataframe$Valor.Consignado      =     dataframe$Valor.Consignado      %>% replace_na(0)
+dataframe$Margem.Disponível     =     dataframe$Margem.Disponível     %>% replace_na(0)
+dataframe$Valor.Benefício       =     dataframe$Valor.Benefício       %>% replace_na(0)
+dataframe$Uso.do.RMC            =     dataframe$Uso.do.RMC            %>% replace_na(0)
+
+dataframe$`Faixa Líquido`               =arules::discretize(method = "cluster",breaks = 10,x = dataframe$Líquido)
+dataframe$`Faixa Margem.Consignável`    =discretize(method = "cluster",breaks = 3,x = dataframe$Margem.Consignável)
+dataframe$`Faixa Valor.Consignado`      =discretize(method = "cluster",breaks = 8,x = dataframe$Valor.Consignado)
+dataframe$`Faixa Margem.Disponível`     =discretize(method = "cluster",breaks = 10,x = dataframe$Margem.Disponível)
+dataframe$`Faixa Uso.do.RMC`            =discretize(method = "cluster",breaks = 5,x = dataframe$Uso.do.RMC) 
+
+
+
+
+transform_levels <- function(x){
+  levels_string <- x %>% unique %>% levels 
+  levels_string <- sapply(X = levels_string,function(x) str_replace_all(string =  x,pattern = "\\[",replacement= ""))
+  levels_string <- sapply(X = levels_string,function(x) str_replace_all(string =  x,pattern = "\\]",replacement= ""))
+  levels_string <- sapply(X = levels_string,function(x) str_replace_all(string =  x,pattern = "\\)",replacement= ""))
+  levels_string <- sapply(X = levels_string,function(x) str_replace_all(string =  x,pattern = "\\(",replacement= ""))
+  levels_string <- sapply(X = levels_string,function(x) str_split(string = x,pattern = ",")) %>% as.data.frame
+  levels_string <- c(levels_string[1,],levels_string[2,ncol(levels_string)]) %>% as.data.frame %>% t
+  levels_string <- levels_string %>% as.numeric %>% round
+  levels_string <- levels_string %>% unique
+  levels_string
+  
+}
+
+
+clean_levels <- function(df3,breaks= NULL,pos){
+  
+  #df3       <- remove_var_zero(df = df)  
+  #pos       <- c(which(str_detect(string = colnames(df3),pattern = "Val" )),  which(str_detect(string = colnames(df3),pattern = "Qua")))
+  df4       <- df3 %>% dplyr::mutate(across(.cols = pos,.fns = arules::discretize,dig.lab = 2,breaks = breaks,method = "frequency"))
+  df_levels <- sapply(X = df4[,pos],FUN = transform_levels) 
+  df5       <- df3
+  
+  for(i in 1:length(pos)){
+    
+    df5[,pos[i]]<- arules::discretize(x = df3[,pos[i]],method = "fixed",breaks = df_levels[[i]])
+  }
+  
+  
+  return(df5)
+  
+  
+}
+
+
+
+
+l1  = dataframe$`Faixa Líquido` %>% transform_levels
+l2  = dataframe$`Faixa Margem.Consignável` %>% transform_levels
+l3  = dataframe$`Faixa Valor.Consignado` %>% transform_levels
+l4  = dataframe$`Faixa Margem.Disponível` %>% transform_levels
+l5  = dataframe$`Faixa Uso.do.RMC` %>% transform_levels
+
+
+dataframe$`Faixa Líquido`               = paste0(discretize(method = "fixed",breaks = l1,x = dataframe$Líquido,labels = FALSE),discretize(method = "fixed",breaks = l1,x = dataframe$Líquido))
+dataframe$`Faixa Margem.Consignável`    = paste0(discretize(method = "fixed",breaks = l2,x = dataframe$Margem.Consignável,labels = FALSE),discretize(method = "fixed",breaks = l2,x = dataframe$Margem.Consignável))
+dataframe$`Faixa Valor.Consignado`      = paste0(discretize(method = "fixed",breaks = l3,x = dataframe$Valor.Consignado,labels = FALSE),discretize(method = "fixed",breaks = l3,x = dataframe$Valor.Consignado))
+dataframe$`Faixa Margem.Disponível`     = paste0(discretize(method = "fixed",breaks = l4,x = dataframe$Margem.Disponível,labels = FALSE),discretize(method = "fixed",breaks = l4,x = dataframe$Margem.Disponível))
+dataframe$`Faixa Uso.do.RMC`            = paste0(discretize(method = "fixed",breaks = l5,x = dataframe$Uso.do.RMC,labels = FALSE),discretize(method = "fixed",breaks = l5,x = dataframe$Uso.do.RMC))
+
+
+dataframe$`R Faixa Líquido`             = discretize(method = "fixed",breaks = l1,x = dataframe$Líquido,labels = FALSE)         
+dataframe$`R Faixa Margem.Consignável`  = discretize(method = "fixed",breaks = l2,x = dataframe$Margem.Consignável,labels = FALSE)
+dataframe$`R Faixa Valor.Consignado`    = discretize(method = "fixed",breaks = l3,x = dataframe$Valor.Consignado,labels = FALSE)   
+dataframe$`R Faixa Margem.Disponível`   = discretize(method = "fixed",breaks = l4,x = dataframe$Margem.Disponível,labels = FALSE)  
+dataframe$`R Faixa Uso.do.RMC`          = discretize(method = "fixed",breaks = l5,x = dataframe$Uso.do.RMC,labels = FALSE)
+dataframe$Valor.Benefício
+
+
+
+
+
+string_bin <- "-1;1;605;660;770;1000"
+```
+
+# Definições do Estudo
+
+Segue base de aposentados enriquecida pela Promobank, favor elaborar um estudo do comprometimento de renda desta classificação para determinar o comportamento de pagamento. Alguns pontos importantes e esperados como resposta:
+
+
+
+* **Diferença do comprometimento de renda entre as rendas presumidas do SPC e Promobank (pode-se usar uma matriz com ambas e resultado por inadimplência)**
+
+* **Verificar se tem divisão por produto;**
+
+* **Macro faixa de renda e quebras mais detalhadas (Usar funcionalidade de Drill Down);**
+
+* **Usar conceito de Inadimplência por visão de atraso, Sinistro 3 e Sinistro 6;**
+
+* **Verificar se variáveis de região garante uma separação maior.**
+
+* **Espera-se com estudo reavaliar e definir novos cortes de valores para esta classe.**
+
+
+# RENDAPRESUMIDA
+
+```{r , echo=FALSE}
+
+layout <- list(
+  font = list(size = 18), 
+  title = "Distribuição RENDAPRESUMIDA", 
+  #width = 1099, 
+  xaxis = list(
+    #type = "log", 
+    #range = c(0.30102999566398114, 2.6989700043360183), 
+    ticks = "outside", 
+    title = "RENDAPRESUMIDA", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    showticklabels = TRUE
+  ), 
+  yaxis = list(
+    #type = "log", 
+    #range = c(-0.9999999999999998, 2.0791812460476247), 
+    ticks = "outside", 
+    title = "Frequência", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    fixedrange = TRUE, 
+    showticklabels = TRUE
+  ), 
+  yaxis2 = list(overlaying = "y", side = "right"),
+  #height = 474, 
+  autosize = TRUE
+)
+
+
+
+inputPanel(
+  #textAreaInput(inputId = "bintext",label = "FAIXAS",value = string_bin),
+  sliderInput(inputId = "range_rend_pres",label = "Range RENDAPRESUMIDA",min = 0,max =max(dataframe$RENDAPRESUMIDA,na.rm = TRUE),value = c(500,5000),width = "100%",dragRange = TRUE)
+)
+
+ 
+fluidRow(column(width = 12,br(),br(),
+                renderPlotly({
+  df <- dataframe %>% dplyr::filter( (RENDAPRESUMIDA >=  input$range_rend_pres[1]) & (RENDAPRESUMIDA < input$range_rend_pres[2]))
+ trace1 <- list(
+  name = "RENDAPRESUMIDA", 
+  type = "histogram", 
+  x = df$RENDAPRESUMIDA
+)
+
+trace2 <- list(
+  name = "Densidade", 
+  type = "scatter", 
+  mode = "lines",
+  fill = "tozeroy",
+  yaxis = "y2",
+  x = density(df$RENDAPRESUMIDA)$x,
+  y = density(df$RENDAPRESUMIDA)$y
+)
+   m <- list(
+    l = 200,
+    r = 50,
+    b = 100,
+    t = 100,
+    pad = 20
+  )
+colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')  
+p <- plot_ly(width = 980,margin = m)
+p <- add_trace(p,  name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
+p <- add_trace(p,  name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
+p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+p_box <- plot_ly(x = df$RENDAPRESUMIDA, type = "box", name = "Box-Plot")
+p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+ ss <- subplot(
+  p,
+  p_box,
+  nrows = 2,
+  shareX = TRUE
+);ss
+ 
+     
+    })
+  ))
+
+
+
+
+```
+
+
+# Valor.Benefício
+
+```{r , echo=FALSE}
+
+layout <- list(
+  font = list(size = 18), 
+  title = "Distribuição Valor.Benefício", 
+  #width = 1099, 
+  xaxis = list(
+    #type = "log", 
+    #range = c(0.30102999566398114, 2.6989700043360183), 
+    ticks = "outside", 
+    title = "Valor do Benficio", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    showticklabels = TRUE
+  ), 
+  yaxis = list(
+    #type = "log", 
+    #range = c(-0.9999999999999998, 2.0791812460476247), 
+    ticks = "outside", 
+    title = "Frequência", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    fixedrange = TRUE, 
+    showticklabels = TRUE
+  ), 
+  yaxis2 = list(overlaying = "y", side = "right"),
+  #height = 474, 
+  autosize = TRUE
+)
+
+
+
+inputPanel(
+  #textAreaInput(inputId = "bintext",label = "FAIXAS",value = string_bin),
+  sliderInput(inputId = "range_vb",label = "Range Valor.Benefício",min = 0,max =max(dataframe$Valor.Benefício,na.rm = TRUE),value = c(500,5000),width = "100%",dragRange = TRUE)
+)
+
+ 
+fluidRow(column(width = 12,br(),br(),
+                renderPlotly({
+  df <- dataframe %>% dplyr::filter( (Valor.Benefício >=  input$range_vb[1]) & (Valor.Benefício < input$range_vb[2]))
+ trace1 <- list(
+  uid = "7a72bc", 
+  name = "Valor.Benefício", 
+  type = "histogram", 
+  x = df$Valor.Benefício
+)
+
+trace2 <- list(
+  uid = "7a72bc", 
+  name = "Densidade", 
+  type = "scatter", 
+  mode = "lines",
+  fill = "tozeroy",
+  yaxis = "y2",
+  x = density(df$Valor.Benefício)$x,
+  y = density(df$Valor.Benefício)$y
+)
+   m <- list(
+    l = 200,
+    r = 50,
+    b = 100,
+    t = 100,
+    pad = 20
+  )
+colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')  
+p <- plot_ly(width = 980,margin = m)
+p <- add_trace(p, uid=trace1$uid, name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
+p <- add_trace(p, uid=trace2$uid, name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
+p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+p_box <- plot_ly(x = df$Valor.Benefício, type = "box", name = "Box-Plot")
+p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+ ss <- subplot(
+  p,
+  p_box,
+  nrows = 2,
+  shareX = TRUE
+);ss
+ 
+     
+    })
+  ))
+
+
+
+
+```
+
+# Valor.Líquido
+
+```{r , echo=FALSE}
+
+layout <- list(
+  font = list(size = 16), 
+  title = "Distribuição Valor.Líquido", 
+  #width = 1099, 
+  xaxis = list(
+    #type = "log", 
+    #range = c(0.30102999566398114, 2.6989700043360183), 
+    ticks = "outside", 
+    title = "Valor.Líquido", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    showticklabels = TRUE
+  ), 
+  yaxis = list(
+    #type = "log", 
+    #range = c(-0.9999999999999998, 2.0791812460476247), 
+    ticks = "outside", 
+    title = "Frequência", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    fixedrange = TRUE, 
+    showticklabels = TRUE
+  ), 
+  yaxis2 = list(overlaying = "y", side = "right"),
+  #height = 474, 
+  autosize = TRUE
+)
+
+
+
+inputPanel(
+  #textAreaInput(inputId = "bintext",label = "FAIXAS",value = string_bin),
+  sliderInput(inputId = "range_liq",label = "Range Valor.Líquido",min = 0,max =max(dataframe$Líquido,na.rm = TRUE),value = c(500,5000),width = "100%",dragRange = TRUE)
+)
+
+ 
+fluidRow(column(width = 12,br(),br(),
+                renderPlotly({
+  df <- dataframe %>% dplyr::filter( (Líquido >=  input$range_liq[1]) & (Líquido < input$range_liq[2]))
+ trace1 <- list(
+  uid = "7a72bc", 
+  name = "Valor.Líquido", 
+  type = "histogram", 
+  x = df$Líquido
+)
+
+trace2 <- list(
+  uid = "7a72bc", 
+  name = "Densidade", 
+  type = "scatter", 
+  mode = "lines",
+  fill = "tozeroy",
+  yaxis = "y2",
+  x = density(df$Líquido)$x,
+  y = density(df$Líquido)$y
+)
+   m <- list(
+    l = 200,
+    r = 50,
+    b = 100,
+    t = 100,
+    pad = 20
+  )
+colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')  
+p <- plot_ly(width = 980,margin = m)
+p <- add_trace(p, uid=trace1$uid, name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
+p <- add_trace(p, uid=trace2$uid, name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
+p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+p_box <- plot_ly(x = df$Líquido, type = "box", name = "Box-Plot")
+p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+ ss <- subplot(
+  p,
+  p_box,
+  nrows = 2,
+  shareX = TRUE
+);ss
+ 
+     
+    })
+  ))
+
+
+
+
+```
+
+# Valor.Consignado
+
+```{r , echo=FALSE}
+
+layout <- list(
+  font = list(size = 16), 
+  title = "Distribuição Valor.Consignado", 
+  #width = 1099, 
+  xaxis = list(
+    #type = "log", 
+    #range = c(0.30102999566398114, 2.6989700043360183), 
+    ticks = "outside", 
+    title = "Valor.Consignado", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    showticklabels = TRUE
+  ), 
+  yaxis = list(
+    #type = "log", 
+    #range = c(-0.9999999999999998, 2.0791812460476247), 
+    ticks = "outside", 
+    title = "Frequência", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    fixedrange = TRUE, 
+    showticklabels = TRUE
+  ), 
+  yaxis2 = list(overlaying = "y", side = "right"),
+  #height = 474, 
+  autosize = TRUE
+)
+
+
+
+inputPanel(
+  #textAreaInput(inputId = "bintext",label = "FAIXAS",value = string_bin),
+  sliderInput(inputId = "range_consig",label = "Range Valor.Consignado",min = 0,max =max(dataframe$Valor.Consignado,na.rm = TRUE),value = c(500,5000),width = "800px",dragRange = TRUE)
+)
+
+ 
+fluidRow(column(width = 12,br(),br(),
+                renderPlotly({
+  df <- dataframe %>% dplyr::filter( (Valor.Consignado >=  input$range_consig[1]) & (Valor.Consignado < input$range_consig[2]))
+ trace1 <- list(
+  uid = "7a72bc", 
+  name = "Valor.Consignado", 
+  type = "histogram", 
+  x = df$Valor.Consignado
+)
+
+trace2 <- list(
+  uid = "7a72bc", 
+  name = "Densidade", 
+  type = "scatter", 
+  mode = "lines",
+  fill = "tozeroy",
+  yaxis = "y2",
+  x = density(df$Valor.Consignado)$x,
+  y = density(df$Valor.Consignado)$y
+)
+   m <- list(
+    l = 200,
+    r = 50,
+    b = 100,
+    t = 100,
+    pad = 20
+  )
+colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')  
+p <- plot_ly(width = 980,margin = m)
+p <- add_trace(p, uid=trace1$uid, name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
+p <- add_trace(p, uid=trace2$uid, name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
+p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+p_box <- plot_ly(x = df$Valor.Consignado, type = "box", name = "Box-Plot")
+p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+ ss <- subplot(
+  p,
+  p_box,
+  nrows = 2,
+  shareX = TRUE
+);ss
+ 
+     
+    })
+  ))
+
+
+
+
+```
+
+# Margem Consignável
+
+```{r , echo=FALSE}
+
+layout <- list(
+  font = list(size = 16), 
+  title = "Distribuição Margem.Consignável", 
+  #width = 1099, 
+  xaxis = list(
+    #type = "log", 
+    #range = c(0.30102999566398114, 2.6989700043360183), 
+    ticks = "outside", 
+    title = "Margem.Consignável", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    showticklabels = TRUE
+  ), 
+  yaxis = list(
+    #type = "log", 
+    #range = c(-0.9999999999999998, 2.0791812460476247), 
+    ticks = "outside", 
+    title = "Frequência", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    fixedrange = TRUE, 
+    showticklabels = TRUE
+  ), 
+  yaxis2 = list(overlaying = "y", side = "right"),
+  #height = 474, 
+  autosize = TRUE
+)
+
+
+
+inputPanel(
+  #textAreaInput(inputId = "bintext",label = "FAIXAS",value = string_bin),
+  sliderInput(inputId = "range_marg_consig",label = "Range Margem",min = 0,max =max(dataframe$Margem.Consignável,na.rm = TRUE),value = c(500,5000),width = "800px",dragRange = TRUE)
+)
+
+ 
+fluidRow(column(width = 12,br(),br(),
+                renderPlotly({
+  df <- dataframe %>% dplyr::filter( (Margem.Consignável >=  input$range_marg_consig[1]) & (Margem.Consignável < input$range_consig[2]))
+ trace1 <- list(
+  uid = "7a72bc", 
+  name = "Margem.Consignável", 
+  type = "histogram", 
+  x = df$Margem.Consignável
+)
+
+trace2 <- list(
+  uid = "7a72bc", 
+  name = "Densidade", 
+  type = "scatter", 
+  mode = "lines",
+  fill = "tozeroy",
+  yaxis = "y2",
+  x = density(df$Margem.Consignável)$x,
+  y = density(df$Margem.Consignável)$y
+)
+   m <- list(
+    l = 200,
+    r = 50,
+    b = 100,
+    t = 100,
+    pad = 20
+  )
+colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')  
+p <- plot_ly(width = 980,margin = m)
+p <- add_trace(p, uid=trace1$uid, name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
+p <- add_trace(p, uid=trace2$uid, name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
+p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+p_box <- plot_ly(x = df$Margem.Consignável, type = "box", name = "Box-Plot")
+p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+ ss <- subplot(
+  p,
+  p_box,
+  nrows = 2,
+  shareX = TRUE
+);ss
+ 
+     
+    })
+  ))
+
+
+
+
+```
+
+# Margem.Disponível
+
+```{r , echo=FALSE}
+
+layout <- list(
+  font = list(size = 16), 
+  title = "Distribuição Margem.Disponível", 
+  #width = 1099, 
+  xaxis = list(
+    #type = "log", 
+    #range = c(0.30102999566398114, 2.6989700043360183), 
+    ticks = "outside", 
+    title = "Margem.Disponível", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    showticklabels = TRUE
+  ), 
+  yaxis = list(
+    #type = "log", 
+    #range = c(-0.9999999999999998, 2.0791812460476247), 
+    ticks = "outside", 
+    title = "Frequência", 
+    nticks = 5, 
+    showline = TRUE, 
+    tickfont = list(size = 14), 
+    autorange = TRUE, 
+    gridcolor = "rgb(204, 204, 204)", 
+    gridwidth = 2, 
+    fixedrange = TRUE, 
+    showticklabels = TRUE
+  ), 
+  yaxis2 = list(overlaying = "y", side = "right"),
+  #height = 474, 
+  autosize = TRUE
+)
+
+
+
+inputPanel(
+  #textAreaInput(inputId = "bintext",label = "FAIXAS",value = string_bin),
+  sliderInput(inputId = "range_marg_disp",label = "Range Margem.Disponível",min = 0,max =max(dataframe$Margem.Disponível,na.rm = TRUE),value = c(500,5000),width = "800px",dragRange = TRUE)
+)
+
+ 
+fluidRow(column(width = 12,br(),br(),
+                renderPlotly({
+  df <- dataframe %>% dplyr::filter( (Margem.Disponível >=  input$range_marg_disp[1]) & (Margem.Disponível < input$range_marg_disp[2]))
+ trace1 <- list(
+  uid = "7a72bc", 
+  name = "Margem.Disponível", 
+  type = "histogram", 
+  x = df$Margem.Disponível
+)
+
+trace2 <- list(
+  uid = "7a72bc", 
+  name = "Densidade", 
+  type = "scatter", 
+  mode = "lines",
+  fill = "tozeroy",
+  yaxis = "y2",
+  x = density(df$Margem.Disponível)$x,
+  y = density(df$Margem.Disponível)$y
+)
+   m <- list(
+    l = 200,
+    r = 50,
+    b = 100,
+    t = 100,
+    pad = 20
+  )
+colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')  
+p <- plot_ly(width = 980,margin = m)
+p <- add_trace(p, uid=trace1$uid, name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
+p <- add_trace(p, uid=trace2$uid, name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
+p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+p_box <- plot_ly(x = df$Margem.Disponível, type = "box", name = "Box-Plot")
+p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+            #margin = list( pad = 50, b = 90, l = 130, r = 50 )
+            )
+ ss <- subplot(
+  p,
+  p_box,
+  nrows = 2,
+  shareX = TRUE
+);ss
+ 
+     
+    })
+  ))
+
+
+
+
+```
+
+
+
+# Matriz de Confusão entre Valor do Benefício Promobank e Renda Presumida (SPC)
+
+```{r,echo=FALSE}
+
+df <- dataframe %>% dplyr::filter(Valor.Benefício < 15000)
+
+
+inputPanel(
+  textAreaInput(inputId = "bintext",label = "FAIXAS",value = string_bin)
+)
+
+ renderHighchart({
+       
+        library(stringr)
+        bin_cut <- "0;5000;10000;15000;20000;25000;30000;350000"
+        string_bin <- input$bintext
+        #print(input$bintext)
+        bin_cut = str_split(bin_cut,pattern = ";") %>% as.data.frame
+        colnames(bin_cut) <- "Range"
+      
+        bin_cut <- bin_cut$Range  %>% as.integer
+        print(bin_cut)
+        
+        bin_cut <- seq(0,10500,500)
+        
+        df1     = cut(df$Valor.Benefício,breaks = bin_cut,right = T,include.lowest = F) 
+        df2     = cut(df$RENDAPRESUMIDA,  breaks = bin_cut,right = T,include.lowest = F) 
+        prop.table(table(df1,df2)) %>% apply( MARGIN = 2,FUN = cumsum)
+        prop.table(table(df1,df2)) %>% apply( MARGIN = 1,FUN = cumsum)
+        
+        df3 = table(df1,df2) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1) 
+
+        #df3 = addmargins(table(df1,df2)) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1) 
+          minn =  table(df1,df2) %>% apply(MARGIN = 2,FUN = min) %>% min
+          maxx =  table(df1,df2) %>% apply(MARGIN = 2,FUN = max) %>% max
+          # levels(df3$RENDAPRESUMIDA)[levels(df3$RENDAPRESUMIDA)=="Sum"] <- "Soma RENDAPRESUMIDA"
+          # levels(df3$Valor.Beneficio)[levels(df3$Valor.Beneficio)=="Sum"] <- "Soma Valor.Beneficio"
+        
+        # if(input$prop){
+        #   #%>% rename(`SCORE ATUAL` = df2,BVS = df1)
+        #   if(input$cumrow){
+        #     df3 = (round(prop.table(table(df1,df2)),5)*100)  %>% addmargins %>% as.data.frame 
+        #     df3 =  tapply(X = df3$Freq,INDEX = df3$df1,FUN = cumsum) %>% rename(`SCORE ATUAL` = df2,BVS = df1)
+        #     minn =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = min) %>% min
+        #     maxx =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = max) %>% max
+        #     minn = minn*100
+        #     maxx = maxx*100
+        #     
+        #     
+        #   }else{
+        #     
+        #     df3 = addmargins(round(prop.table(table(df1,df2)),5)*100) %>% as.data.frame %>% rename(`SCORE ATUAL` = df2,BVS = df1)
+        #     minn =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = min) %>% min
+        #     maxx =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = max) %>% max
+        #     minn = minn*100
+        #     maxx = maxx*100
+        #     levels(df3$BVS)[levels(df3$BVS)=="Sum"] <- "Soma BVS"
+        #     levels(df3$`SCORE ATUAL`)[levels(df3$`SCORE ATUAL`)=="Sum"] <- "Soma Atual"
+        #     
+        #   }
+        #  
+        # }else{
+        #   
+        #   df3 = addmargins(table(df1,df2)) %>% as.data.frame %>% rename(`SCORE ATUAL` = df2,BVS = df1) 
+        #   minn =  table(df1,df2) %>% apply(MARGIN = 2,FUN = min) %>% min
+        #   maxx =  table(df1,df2) %>% apply(MARGIN = 2,FUN = max) %>% max
+        #   levels(df3$BVS)[levels(df3$BVS)=="Sum"] <- "Soma BVS"
+        #   levels(df3$`SCORE ATUAL`)[levels(df3$`SCORE ATUAL`)=="Sum"] <- "Soma Atual"
+        # }
+       
+        
+        
+        coul <- heat.colors(nrow(df3))
+        coul <- c(coul,"#FFFFFF")
+        print(coul)
+        # minn =  min(table(df1,df2) %>% apply(MARGIN = 2,FUN = min))
+        # maxx =  max(table(df1,df2) %>% apply(MARGIN = 2,FUN = max))
+        cat("MAximo:",maxx, "\n\nMinimo:",minn)
+        df3
+        df3 %>%
+      hchart(type = "heatmap", hcaes(x = Valor.Beneficio, y = RENDAPRESUMIDA, value = "Freq"),dataLabels = list(enabled = TRUE)) %>%
+            hc_xAxis(reversed=FALSE,opposite = TRUE,title = list(text = "Valor.Beneficio",style=list( color= '#000000',fontWeight= 'bold', fontSize= '18px')),
+                     tickColor= 'red', labels = list(format = "{value}",
+                                                     style=list(color="black",fontSize="14px"))) %>%
+            hc_yAxis(reversed=TRUE,opposite = FALSE,title = list(text = "RENDAPRESUMIDA",style=list( color= '#000000',fontWeight= 'bold', fontSize= '18px')),
+                     tickColor= 'red', labels = list(format = "{value}",
+                                                     style=list(color="black",fontSize="14px"))) %>%
+            hc_legend(layout = "vertical", verticalAlign = "middle", align = "right",itemStyle=list(fontSize="12px",color="white")) %>%
+            hc_colorAxis(minColor =coul[nrow(df3)],
+                         maxColor = coul[1],
+                         min = minn,max=maxx
+                         )
+    })
+
+
+```
+
+
+
+
+```{r}
+
+
+ # bin_cut <- "0;5000;10000;15000;20000;25000;30000;350000"
+ #        string_bin <- input$bintext
+ #        #print(input$bintext)
+ #        bin_cut = str_split(bin_cut,pattern = ";") %>% as.data.frame
+ #        colnames(bin_cut) <- "Range"
+ #      
+ #        bin_cut <- bin_cut$Range  %>% as.integer
+ #        print(bin_cut)
+        
+        bin_cut <- seq(0,15500,500)
+        
+        df1     = cut(df$Valor.Benefício,breaks = bin_cut,right = T,include.lowest = F) 
+        df2     = cut(df$RENDAPRESUMIDA,  breaks = bin_cut,right = T,include.lowest = F) 
+        prop.table(table(df1,df2)) %>% apply( MARGIN = 2,FUN = cumsum)
+        prop.table(table(df1,df2)) %>% apply( MARGIN = 1,FUN = cumsum)
+        l1 <- levels(df1) %>% unique
+        l2 <- levels(df2) %>% unique
+        
+        tab <- table(Valor.Beneficio = df1,RENDAPRESUMIDA = df2)
+        cm  <- matrix(data = tab,nrow = 31,ncol = 31)
+        # df3 = table(df1,df2) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1) 
+
+        renderPlotly({
+  trace1 <- list(
+  type = "heatmap", 
+  x = l1, 
+  y = l2, 
+  zmax = 15500, 
+  zmin = 0, 
+  z = cm,
+  autocolorscale = TRUE
+)
+data <- list(trace1)
+layout <- list(
+  title = "Matrix De Confusão", 
+  width = 980, 
+  xaxis = list(
+    title = "Valor.Beneficio", 
+    titlefont = list(
+      size = 18, 
+      color = "#7f7f7f"
+    )
+  ), 
+  yaxis = list(
+    title = "RENDAPRESUMIDA", 
+    titlefont = list(
+      size = 18, 
+      color = "#7f7f7f"
+    )
+  ), 
+  height = 980, 
+  barmode = "overlay"
+)
+p <- plot_ly()
+p <- add_trace(p, type=trace1$type, x=trace1$x, y=trace1$y, z=trace1$z, autocolorscale=trace1$autocolorscale)
+p <- layout(p, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, barmode=layout$barmode)
+p
+          
+        })
+
+
+
+```
+
+# Embedded Application
+
+It's also possible to embed an entire Shiny application within an R Markdown document using the `shinyAppDir` function. This example embeds a Shiny application located in another directory:
+
+```{r tabsets, echo=FALSE}
+shinyAppDir(
+  system.file("examples/06_tabsets", package = "shiny"),
+  options = list(
+    width = "100%", height = 550
+  )
+)
+```
+
+Note the use of the `height` parameter to determine how much vertical space the embedded application should occupy.
+
+You can also use the `shinyApp` function to define an application inline rather then in an external directory.
+
+In all of R code chunks above the `echo = FALSE` attribute is used. This is to prevent the R code within the chunk from rendering in the document alongside the Shiny components.
+
+
+

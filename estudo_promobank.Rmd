@@ -1,0 +1,147 @@
+---
+title: ''
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(stringr)
+library(dplyr)
+library(arules)
+library(tidyr)
+
+path = "D:\\OneDrive - Crefaz Financiamentos e Investimentos\\Paineis BI\\Relatorios\\PROMOBANK\\crefaz_aposentados_backtest - higienizada_jan_2022.csv"
+
+dataframe <- read.csv(file = "C:\\Users\\marco\OneDrive - Crefaz Financiamentos e Investimentos\\Paineis BI\\Relatorios\\PROMOBANK",sep = ";",header = TRUE,encoding = 'utf-8')
+
+
+chars_p = c("R\\$", " ", "\\." , ",")
+chars_r = c(  "",    "", "",   "." )
+for (i in 1:length(chars_p)){
+  
+  dataframe$Líquido             = str_replace(string = dataframe$Líquido,pattern = chars_p[i],replacement = chars_r[i])
+  
+  dataframe$Margem.Consignável  = str_replace(string = dataframe$Margem.Consignável ,pattern = chars_p[i],replacement = chars_r[i])
+  dataframe$Valor.Consignado    = str_replace(string = dataframe$Valor.Consignado ,pattern = chars_p[i],replacement = chars_r[i])
+  dataframe$Margem.Disponível   = str_replace(string = dataframe$Margem.Disponível ,pattern = chars_p[i],replacement = chars_r[i])
+  
+}
+
+dataframe$Líquido               =     dataframe$Líquido                  %>% as.numeric 
+dataframe$Margem.Consignável    =     dataframe$Margem.Consignável       %>% as.numeric 
+dataframe$Valor.Consignado      =     dataframe$Valor.Consignado         %>% as.numeric 
+dataframe$Margem.Disponível     =     dataframe$Margem.Disponível        %>% as.numeric 
+#dataframe$Valor.Parcela        = str_replace(string = dataframe$Valor.Parcela ,pattern = chars_p[i],replacement = chars_r[i])          %>% as.numeric 
+
+
+
+dataframe$Margem.Consignável %>% range(na.rm = TRUE)
+
+pos                             <- dataframe$Valor.Benefício %>% str_detect(pattern = "@") %>% which
+dataframe$Valor.Benefício[pos]  <- dataframe$Margem.Consignável[pos]/0.35
+
+pos                             <- dataframe$Uso.do.RMC %>% str_detect(pattern = "SIM|NAO") %>% which
+aux                             <- dataframe$Uso.do.RMC[pos]
+dataframe$Uso.do.RMC[pos]       <- dataframe$RMC[pos]
+dataframe$RMC[pos]              <- aux
+
+for (i in 1:length(chars_p)){
+  
+  dataframe$Uso.do.RMC          = str_replace(string = dataframe$Uso.do.RMC ,pattern = chars_p[i],replacement = chars_r[i])
+  dataframe$Valor.Benefício     = str_replace(string = dataframe$Valor.Benefício ,pattern = chars_p[i],replacement = chars_r[i])
+ # dataframe$Valor.Parcela      = str_replace(string = dataframe$Valor.Parcela ,pattern = chars_p[i],replacement = chars_r[i])
+  
+}
+
+dataframe$Valor.Benefício       = str_replace(string = dataframe$Valor.Benefício ,pattern = chars_p[i],replacement = chars_r[i])        %>% as.numeric 
+dataframe$Uso.do.RMC            = str_replace(string = dataframe$Uso.do.RMC ,pattern = chars_p[i],replacement = chars_r[i])             %>% as.numeric 
+
+dataframe$Margem.Consignável    =     dataframe$Margem.Consignável    %>% replace_na(0)
+dataframe$Líquido               =     dataframe$Líquido               %>% replace_na(0)
+dataframe$Valor.Consignado      =     dataframe$Valor.Consignado      %>% replace_na(0)
+dataframe$Margem.Disponível     =     dataframe$Margem.Disponível     %>% replace_na(0)
+dataframe$Valor.Benefício       =     dataframe$Valor.Benefício       %>% replace_na(0)
+dataframe$Uso.do.RMC            =     dataframe$Uso.do.RMC            %>% replace_na(0)
+
+dataframe$`Faixa Líquido`               =discretize(method = "cluster",breaks = 10,x = dataframe$Líquido)
+dataframe$`Faixa Margem.Consignável`    =discretize(method = "cluster",breaks = 3,x = dataframe$Margem.Consignável)
+dataframe$`Faixa Valor.Consignado`      =discretize(method = "cluster",breaks = 8,x = dataframe$Valor.Consignado)
+dataframe$`Faixa Margem.Disponível`     =discretize(method = "cluster",breaks = 10,x = dataframe$Margem.Disponível)
+dataframe$`Faixa Uso.do.RMC`            =discretize(method = "cluster",breaks = 5,x = dataframe$Uso.do.RMC) 
+
+transform_levels <- function(x){
+  levels_string <- x %>% unique %>% levels 
+  levels_string <- sapply(X = levels_string,function(x) str_replace_all(string =  x,pattern = "\\[",replacement= ""))
+  levels_string <- sapply(X = levels_string,function(x) str_replace_all(string =  x,pattern = "\\]",replacement= ""))
+  levels_string <- sapply(X = levels_string,function(x) str_replace_all(string =  x,pattern = "\\)",replacement= ""))
+  levels_string <- sapply(X = levels_string,function(x) str_replace_all(string =  x,pattern = "\\(",replacement= ""))
+  levels_string <- sapply(X = levels_string,function(x) str_split(string = x,pattern = ",")) %>% as.data.frame
+  levels_string <- c(levels_string[1,],levels_string[2,ncol(levels_string)]) %>% as.data.frame %>% t
+  levels_string <- levels_string %>% as.numeric %>% round
+  levels_string <- levels_string %>% unique
+  levels_string
+  
+}
+
+
+clean_levels <- function(df3,breaks= NULL,pos){
+  
+  #df3       <- remove_var_zero(df = df)  
+  #pos       <- c(which(str_detect(string = colnames(df3),pattern = "Val" )),  which(str_detect(string = colnames(df3),pattern = "Qua")))
+  df4       <- df3 %>% dplyr::mutate(across(.cols = pos,.fns = arules::discretize,dig.lab = 2,breaks = breaks,method = "frequency"))
+  df_levels <- sapply(X = df4[,pos],FUN = transform_levels) 
+  df5       <- df3
+  
+  for(i in 1:length(pos)){
+    
+    df5[,pos[i]]<- arules::discretize(x = df3[,pos[i]],method = "fixed",breaks = df_levels[[i]])
+  }
+  
+  
+  return(df5)
+  
+  
+}
+
+
+
+
+l1               = dataframe$`Faixa Líquido` %>% transform_levels
+l2    = dataframe$`Faixa Margem.Consignável` %>% transform_levels
+l3      = dataframe$`Faixa Valor.Consignado` %>% transform_levels
+l4     = dataframe$`Faixa Margem.Disponível` %>% transform_levels
+l5            = dataframe$`Faixa Uso.do.RMC` %>% transform_levels
+
+
+dataframe$`Faixa Líquido`               = paste0(discretize(method = "fixed",breaks = l1,x = dataframe$Líquido,labels = FALSE),discretize(method = "fixed",breaks = l1,x = dataframe$Líquido))
+dataframe$`Faixa Margem.Consignável`    = paste0(discretize(method = "fixed",breaks = l2,x = dataframe$Margem.Consignável,labels = FALSE),discretize(method = "fixed",breaks = l2,x = dataframe$Margem.Consignável))
+dataframe$`Faixa Valor.Consignado`      = paste0(discretize(method = "fixed",breaks = l3,x = dataframe$Valor.Consignado,labels = FALSE),discretize(method = "fixed",breaks = l3,x = dataframe$Valor.Consignado))
+dataframe$`Faixa Margem.Disponível`     = paste0(discretize(method = "fixed",breaks = l4,x = dataframe$Margem.Disponível,labels = FALSE),discretize(method = "fixed",breaks = l4,x = dataframe$Margem.Disponível))
+dataframe$`Faixa Uso.do.RMC`            = paste0(discretize(method = "fixed",breaks = l5,x = dataframe$Uso.do.RMC,labels = FALSE),discretize(method = "fixed",breaks = l5,x = dataframe$Uso.do.RMC))
+
+
+dataframe$`R Faixa Líquido`             = discretize(method = "fixed",breaks = l1,x = dataframe$Líquido,labels = FALSE)         
+dataframe$`R Faixa Margem.Consignável`  = discretize(method = "fixed",breaks = l2,x = dataframe$Margem.Consignável,labels = FALSE)
+dataframe$`R Faixa Valor.Consignado`    = discretize(method = "fixed",breaks = l3,x = dataframe$Valor.Consignado,labels = FALSE)   
+dataframe$`R Faixa Margem.Disponível`   = discretize(method = "fixed",breaks = l4,x = dataframe$Margem.Disponível,labels = FALSE)  
+dataframe$`R Faixa Uso.do.RMC`          = discretize(method = "fixed",breaks = l5,x = dataframe$Uso.do.RMC,labels = FALSE)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
