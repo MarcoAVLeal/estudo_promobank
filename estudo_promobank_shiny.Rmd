@@ -812,116 +812,85 @@ p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,
 
 # Matriz de Confusão entre Valor do Benefício Promobank e Renda Presumida (SPC)
 
+
+
+
 ```{r,echo=FALSE,include=FALSE}
 
-df <- dataframe %>% dplyr::filter(Valor.Benefício < 15000)
-
-
-# inputPanel(
-#   textAreaInput(inputId = "bintext",label = "FAIXAS",value = string_bin)
+# 
+#  # bin_cut <- "0;5000;10000;15000;20000;25000;30000;350000"
+#  #        string_bin <- input$bintext
+#  #        #print(input$bintext)
+#  #        bin_cut = str_split(bin_cut,pattern = ";") %>% as.data.frame
+#  #        colnames(bin_cut) <- "Range"
+#  #      
+#  #        bin_cut <- bin_cut$Range  %>% as.integer
+#  #        print(bin_cut)
+#         df <- dataframe %>% dplyr::filter(Valor.Benefício < 15000)
+#         bin_cut <- seq(0,15500,500)
+#         
+#         df1     = cut(df$Valor.Benefício,breaks = bin_cut,right = T,include.lowest = F) 
+#         df2     = cut(df$RENDAPRESUMIDA,  breaks = bin_cut,right = T,include.lowest = F) 
+#         # prop.table(table(df1,df2)) %>% apply( MARGIN = 2,FUN = cumsum)
+#         # prop.table(table(df1,df2)) %>% apply( MARGIN = 1,FUN = cumsum)
+#         l1 <- levels(df1) %>% unique
+#         l2 <- levels(df2) %>% unique
+#         
+#         tab <- table(Valor.Beneficio = df1,RENDAPRESUMIDA = df2)
+#         cm  <- matrix(data = tab,nrow = 31,ncol = 31)
+#         # df3 = table(df1,df2) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1) 
+# 
+#         renderPlotly({
+#   trace1 <- list(
+#   type = "heatmap", 
+#   x = l1, 
+#   y = l2, 
+#   zmax = 15500, 
+#   zmin = 0, 
+#   z = cm,
+#   autocolorscale = TRUE
 # )
+# data <- list(trace1)
+# layout <- list(
+#   title = "Matrix De Confusão", 
+#   width = 980, 
+#   xaxis = list(
+#     title = "Valor.Beneficio", 
+#     titlefont = list(
+#       size = 18, 
+#       color = "#7f7f7f"
+#     )
+#   ), 
+#   yaxis = list(
+#     title = "RENDAPRESUMIDA", 
+#     titlefont = list(
+#       size = 18, 
+#       color = "#7f7f7f"
+#     )
+#   ), 
+#   height = 640, 
+#   barmode = "overlay"
+# )
+# p <- plot_ly()
+# p <- add_trace(p, type=trace1$type, x=trace1$x, y=trace1$y, z=trace1$z, autocolorscale=trace1$autocolorscale)
+# p <- layout(p, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, barmode=layout$barmode)
+# p
+#           
+#         })
 # 
-#  renderHighchart({
-# 
-#         library(stringr)
-#         bin_cut <- "0;5000;10000;15000;20000;25000;30000;350000"
-#         string_bin <- input$bintext
-#         #print(input$bintext)
-#         bin_cut = str_split(bin_cut,pattern = ";") %>% as.data.frame
-#         colnames(bin_cut) <- "Range"
-# 
-#         bin_cut <- bin_cut$Range  %>% as.integer
-# 
-# 
-#         bin_cut <- seq(0,10500,500)
-# 
-#         df1     = cut(df$Valor.Benefício,breaks = bin_cut,right = T,include.lowest = F)
-#         df2     = cut(df$RENDAPRESUMIDA,  breaks = bin_cut,right = T,include.lowest = F)
-#         prop.table(table(df1,df2)) %>% apply( MARGIN = 2,FUN = cumsum)
-#         prop.table(table(df1,df2)) %>% apply( MARGIN = 1,FUN = cumsum)
-# 
-#         df3 = table(df1,df2) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1)
-# 
-#         #df3 = addmargins(table(df1,df2)) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1)
-#           minn =  table(df1,df2) %>% apply(MARGIN = 2,FUN = min) %>% min
-#           maxx =  table(df1,df2) %>% apply(MARGIN = 2,FUN = max) %>% max
-#           # levels(df3$RENDAPRESUMIDA)[levels(df3$RENDAPRESUMIDA)=="Sum"] <- "Soma RENDAPRESUMIDA"
-#           # levels(df3$Valor.Beneficio)[levels(df3$Valor.Beneficio)=="Sum"] <- "Soma Valor.Beneficio"
-# 
-#         # if(input$prop){
-#         #   #%>% rename(`SCORE ATUAL` = df2,BVS = df1)
-#         #   if(input$cumrow){
-#         #     df3 = (round(prop.table(table(df1,df2)),5)*100)  %>% addmargins %>% as.data.frame
-#         #     df3 =  tapply(X = df3$Freq,INDEX = df3$df1,FUN = cumsum) %>% rename(`SCORE ATUAL` = df2,BVS = df1)
-#         #     minn =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = min) %>% min
-#         #     maxx =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = max) %>% max
-#         #     minn = minn*100
-#         #     maxx = maxx*100
-#         #
-#         #
-#         #   }else{
-#         #
-#         #     df3 = addmargins(round(prop.table(table(df1,df2)),5)*100) %>% as.data.frame %>% rename(`SCORE ATUAL` = df2,BVS = df1)
-#         #     minn =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = min) %>% min
-#         #     maxx =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = max) %>% max
-#         #     minn = minn*100
-#         #     maxx = maxx*100
-#         #     levels(df3$BVS)[levels(df3$BVS)=="Sum"] <- "Soma BVS"
-#         #     levels(df3$`SCORE ATUAL`)[levels(df3$`SCORE ATUAL`)=="Sum"] <- "Soma Atual"
-#         #
-#         #   }
-#         #
-#         # }else{
-#         #
-#         #   df3 = addmargins(table(df1,df2)) %>% as.data.frame %>% rename(`SCORE ATUAL` = df2,BVS = df1)
-#         #   minn =  table(df1,df2) %>% apply(MARGIN = 2,FUN = min) %>% min
-#         #   maxx =  table(df1,df2) %>% apply(MARGIN = 2,FUN = max) %>% max
-#         #   levels(df3$BVS)[levels(df3$BVS)=="Sum"] <- "Soma BVS"
-#         #   levels(df3$`SCORE ATUAL`)[levels(df3$`SCORE ATUAL`)=="Sum"] <- "Soma Atual"
-#         # }
-# 
-# 
-# 
-#         coul <- heat.colors(nrow(df3))
-#         coul <- c(coul,"#FFFFFF")
-#         print(coul)
-#         # minn =  min(table(df1,df2) %>% apply(MARGIN = 2,FUN = min))
-#         # maxx =  max(table(df1,df2) %>% apply(MARGIN = 2,FUN = max))
-#         cat("MAximo:",maxx, "\n\nMinimo:",minn)
-#         df3
-#         df3 %>%
-#       hchart(type = "heatmap", hcaes(x = Valor.Beneficio, y = RENDAPRESUMIDA, value = "Freq"),dataLabels = list(enabled = TRUE)) %>%
-#             hc_xAxis(reversed=FALSE,opposite = TRUE,title = list(text = "Valor.Beneficio",style=list( color= '#000000',fontWeight= 'bold', fontSize= '18px')),
-#                      tickColor= 'red', labels = list(format = "{value}",
-#                                                      style=list(color="black",fontSize="14px"))) %>%
-#             hc_yAxis(reversed=TRUE,opposite = FALSE,title = list(text = "RENDAPRESUMIDA",style=list( color= '#000000',fontWeight= 'bold', fontSize= '18px')),
-#                      tickColor= 'red', labels = list(format = "{value}",
-#                                                      style=list(color="black",fontSize="14px"))) %>%
-#             hc_legend(layout = "vertical", verticalAlign = "middle", align = "right",itemStyle=list(fontSize="12px",color="white")) %>%
-#             hc_colorAxis(minColor =coul[nrow(df3)],
-#                          maxColor = coul[1],
-#                          min = minn,max=maxx
-#                          )
-#     })
 
 
 ```
 
 
-
-
 ```{r,echo=FALSE}
 
 
- # bin_cut <- "0;5000;10000;15000;20000;25000;30000;350000"
- #        string_bin <- input$bintext
- #        #print(input$bintext)
- #        bin_cut = str_split(bin_cut,pattern = ";") %>% as.data.frame
- #        colnames(bin_cut) <- "Range"
- #      
- #        bin_cut <- bin_cut$Range  %>% as.integer
- #        print(bin_cut)
-        
+library(arules)
+library(multdiscretization)
+library(dplyr)
+library(ggplot2)
+    df <- dataframe %>% dplyr::filter(Valor.Benefício < 15000)
         bin_cut <- seq(0,15500,500)
         
         df1     = cut(df$Valor.Benefício,breaks = bin_cut,right = T,include.lowest = F) 
@@ -933,68 +902,187 @@ df <- dataframe %>% dplyr::filter(Valor.Benefício < 15000)
         
         tab <- table(Valor.Beneficio = df1,RENDAPRESUMIDA = df2)
         cm  <- matrix(data = tab,nrow = 31,ncol = 31)
-        # df3 = table(df1,df2) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1) 
+axis.theme <- function(x.angle = 0,vjust=0,hjust=0.5,pos_leg="top",textsize = 10,lengend_title_size = 10,lengend_text_size = 8,title_size = 16){
+  
+  
+  theme_bw()  +
+    theme(
+      axis.text.x = element_text(angle = x.angle,face = "bold",size = textsize,hjust=hjust, vjust=vjust),
+      axis.text.y = element_text(angle = 0,face = "bold",size = textsize),
+      legend.background = element_rect(fill = "transparent", colour = NA,size = 2),
+      panel.background = element_rect(fill = "transparent", colour = NA),
+      plot.background = element_rect(fill = "white", colour = NA),
+      axis.title.x = element_text(colour = "black",size = textsize,face = "bold"),
+      axis.title.y = element_text(colour = "black",size = textsize,face = "bold"),
+      legend.title = element_text(colour = "black",size = lengend_title_size),
+      legend.position = pos_leg,
+      legend.text = element_text(colour = "black",size = lengend_text_size,face = "bold"),
+      panel.grid = element_line(linetype="dashed"),
+      panel.grid.major = element_line(colour = "gray"),
+      title =element_text(size=title_size, face='bold',hjust = 0.5),
+      plot.title = element_text(hjust = 0.5),
+      axis.title = element_text(color="#000000", face="bold", size=textsize,lineheight = 2))
+  
+}
 
-        renderPlotly({
-  trace1 <- list(
-  type = "heatmap", 
-  x = l1, 
-  y = l2, 
-  zmax = 15500, 
-  zmin = 0, 
-  z = cm,
-  autocolorscale = TRUE
-)
-data <- list(trace1)
-layout <- list(
-  title = "Matrix De Confusão", 
-  width = 980, 
-  xaxis = list(
-    title = "Valor.Beneficio", 
-    titlefont = list(
-      size = 18, 
-      color = "#7f7f7f"
-    )
-  ), 
-  yaxis = list(
-    title = "RENDAPRESUMIDA", 
-    titlefont = list(
-      size = 18, 
-      color = "#7f7f7f"
-    )
-  ), 
-  height = 980, 
-  barmode = "overlay"
-)
-p <- plot_ly()
-p <- add_trace(p, type=trace1$type, x=trace1$x, y=trace1$y, z=trace1$z, autocolorscale=trace1$autocolorscale)
-p <- layout(p, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, barmode=layout$barmode)
-p
-          
-        })
+
+
+
+# 
+# 
+# class_seq <- seq(0,1000,50)
+# 
+# df_matrix_0  <- df_scores %>% dplyr::select(c("SCORE_SCR","SCORE_SPC")) 
+# df_matrix_0$SPC_CLASS   <- arules::discretize(df_matrix_0$SCORE_SPC,    method = "fixed",labels = NULL, breaks = class_seq)
+# 
+# 
+# 
+# 
+# df_matrix_0$SCR_CLASS <- arules::discretize(df_matrix_0$SCORE_SCR,  method = "fixed",labels = NULL, breaks = class_seq)
+
+
+
+
+
+cf_matrix = table(Valor.Beneficio = df1,RENDAPRESUMIDA = df2) %>% as.data.frame
+
+p_dist <- ggplot(cf_matrix, aes(x = Valor.Beneficio, y = RENDAPRESUMIDA, fill = Freq)) +
+  geom_tile(color = "black") +
+  labs(title = "Distribuição de Clientes por faixa de Score")+
+  geom_text(aes(label = Freq), color = "white", size = 3) +
+     scale_x_discrete(position = "top") +
+     scale_y_discrete(limits = rev)+
+  scale_fill_gradient(low = "darkblue", high = "red",name = "UVI") +
+  axis.theme(pos_leg = "none",textsize = 8,title_size = 10,x.angle = 45,vjust= -0.5,hjust=0)
+
+
+
+renderPlotly({
+  
+ggplotly(p_dist,height = 640)
+  
+})
+
+
 
 
 
 ```
 
-# Embedded Application
 
-It's also possible to embed an entire Shiny application within an R Markdown document using the `shinyAppDir` function. This example embeds a Shiny application located in another directory:
 
-```{r tabsets, echo=FALSE}
-shinyAppDir(
-  system.file("examples/06_tabsets", package = "shiny"),
-  options = list(
-    width = "100%", height = 550
-  )
-)
+```{r,echo=FALSE,include=FALSE}
+
+# df_score$PREDICT <- 1-(df_score$SCORE/1000)
+# df_score$PREDICT_INV <- (df_score$SCORE/1000)
+# df_bons <- df_score %>% filter(Sinistro6 == 0)
+# df_maus <- df_score %>% filter(Sinistro6 == 1)
+# 
+# 
+# seq_score <- seq(0,1,0.01)
+# 
+# v_bons <- df_bons %>% dplyr::arrange(PREDICT) %>% dplyr::select(PREDICT)
+# v_maus <- df_maus %>% dplyr::arrange(PREDICT) %>% dplyr::select(PREDICT)
+# cumvalbom <- c()
+# for(i  in 1:length(seq_score)){
+#   
+#  cumvalbom[i] <- ( (v_bons < seq_score[i]) %>% mean)
+#   
+#   
+# }
+# cumvalmau <- c()
+# for(i  in 1:length(seq_score)){
+#   
+#   cumvalmau[i] <- ( (v_maus < seq_score[i]) %>% mean)
+#   
+#   
+# }
+# 
+# df_acumulado <- data.frame(SCORE = seq_score,`Acumulado Bom` = cumvalbom,`Acumulado Mau` = cumvalmau)
+# 
+# v_bons <- df_bons %>% dplyr::arrange(PREDICT_INV) %>% dplyr::select(PREDICT_INV)
+# v_maus <- df_maus %>% dplyr::arrange(PREDICT_INV) %>% dplyr::select(PREDICT_INV)
+# cumvalbom <- c()
+# for(i  in 1:length(seq_score)){
+#   
+#   cumvalbom[i] <- ( (v_bons < seq_score[i]) %>% mean)
+#   
+#   
+# }
+# cumvalmau <- c()
+# for(i  in 1:length(seq_score)){
+#   
+#   cumvalmau[i] <- ( (v_maus < seq_score[i]) %>% mean)
+#   
+#   
+# }
+# 
+# df_acumulado$`Acumulado Bom_Inv` <- cumvalbom
+# df_acumulado$`Acumulado Mau_Inv` <- cumvalmau
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# #df_melt <- df_acumulado %>% reshape2::melt(id.vars = "SCORE",measure.vars = c("Acumulado Bom_Inv","Acumulado Mau_Inv"),value.name = "Acumulado (%)",variable.name= "Legenda")
+# 
+# 
+# 
+# # p2 <- ggplot(data = df_melt)+
+# #   geom_line(size = 1.2, alpha = 0.75,aes(x= SCORE, y = `Acumulado (%)`, color = Legenda))+
+# #   scale_color_manual(values = c("darkgreen", "darkred"))+
+# #   scale_x_continuous(breaks = seq(0,1,0.05))+
+# #   scale_y_continuous(breaks = seq(0,1,0.1))+
+# #   axis.theme(title_size = 12,textsize = 12,pos_leg = "bottom",x.angle = 45,vjust = 1,hjust=1);p2
+# 
+# 
+# 
+# 
+# 
+# df_acumulado$Diff_Acumulado = abs(df_acumulado$Acumulado.Bom - df_acumulado$Acumulado.Mau)
+# df_acumulado$Diff_Acumulado_Inv = abs(df_acumulado$Acumulado.Bom - (1-df_acumulado$Acumulado.Mau))
+# df_acumulado$max_diff       = max(df_acumulado$Diff_Acumulado)
+# df_acumulado$cutoff         = df_acumulado$SCORE[which.max(df_acumulado$Diff_Acumulado)]
+# df_acumulado$maxbom         = df_acumulado$Acumulado.Bom[which.max(df_acumulado$Diff_Acumulado)]
+# df_acumulado$maxmau         = df_acumulado$Acumulado.Mau[which.max(df_acumulado$Diff_Acumulado)]
+# df_acumulado$cutoff_balanced       = df_acumulado$SCORE[which.min(df_acumulado$Diff_Acumulado_Inv)]
+# 
+# df_melt <- df_acumulado %>% reshape2::melt(id.vars = "SCORE",measure.vars = c("Acumulado.Bom","Acumulado.Mau","Diff_Acumulado"),value.name = "Acumulado (%)",variable.name= "Legenda")
+# 
+# p1 <- ggplot(data = df_melt)+
+#   geom_line(size = 1.2, alpha = 0.75,aes(x= SCORE, y = `Acumulado (%)`, color = Legenda))+
+#   scale_color_manual(values = c("darkgreen", "darkred","darkblue"))+
+#   scale_x_continuous(breaks = seq(0,1,0.05))+
+#   scale_y_continuous(breaks = seq(0,1,0.1))+
+#   axis.theme(title_size = 12,textsize = 12,pos_leg = "bottom",x.angle = 45,vjust = 1,hjust=1)+  
+#   geom_vline(xintercept = df_acumulado$cutoff, 
+#                           linetype = "dashed", colour = "red", alpha = 0.75) +
+#   geom_segment(aes(x = max(df_acumulado$cutoff), 
+#                    y = max(df_acumulado$maxmau), 
+#                    xend = max(df_acumulado$cutoff),
+#                    yend = max(df_acumulado$maxbom)),color = "red",size=1.2) + 
+#   geom_segment(aes(x = max(df_acumulado$cutoff),
+#                    y = max(df_acumulado$maxmau) + max(df_acumulado$max_diff)/2, 
+#                    xend = max(df_acumulado$cutoff)+0.1,
+#                    yend = max(df_acumulado$maxmau) + max(df_acumulado$max_diff)/2),
+#                arrow = arrow(length = unit(0.5, "cm")))+
+#   annotate(geom="text", x = df_acumulado$cutoff+0.15,
+#            y = max(df_acumulado$maxmau) + max(df_acumulado$max_diff)/2, label=paste0("KS.: ",round(df_acumulado$max_diff,3),"\nCutoff:",df_acumulado$cutoff),
+#            color="black") 
+# 
+# p1
+
+
+
 ```
 
-Note the use of the `height` parameter to determine how much vertical space the embedded application should occupy.
 
-You can also use the `shinyApp` function to define an application inline rather then in an external directory.
 
-In all of R code chunks above the `echo = FALSE` attribute is used. This is to prevent the R code within the chunk from rendering in the document alongside the Shiny components.
+# KS
 
+
+Aqui sera apresentado o teste de kS.
 
 
