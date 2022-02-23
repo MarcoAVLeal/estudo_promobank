@@ -29,14 +29,21 @@ library(viridis)
 library(rdrop2)
 library(plotly)
 
+if(str_detect(string = getwd(),pattern = "marco")){
+  
+path = "C:\\Users\\marco\\OneDrive - Crefaz Financiamentos e Investimentos\\Paineis BI\\Relatorios\\PROMOBANK\\"
+  
+}else{
+  
+ path = "D:\\OneDrive - Crefaz Financiamentos e Investimentos\\Paineis BI\\Relatorios\\PROMOBANK\\"
+  
+}
 
 
 
-path = "D:\\OneDrive - Crefaz Financiamentos e Investimentos\\Paineis BI\\Relatorios\\PROMOBANK\\crefaz_aposentados_backtest - higienizada_jan_2022.csv"
+dataframe <- read.csv(file = paste0(path,"crefaz_aposentados_backtest - higienizada_jan_2022.csv"),sep = ";",header = TRUE,encoding = 'utf-8')
 
-dataframe <- read.csv(file = "C:\\Users\\marco\\OneDrive - Crefaz Financiamentos e Investimentos\\Paineis BI\\Relatorios\\PROMOBANK\\crefaz_aposentados_backtest - higienizada_jan_2022.csv",sep = ";",header = TRUE,encoding = 'utf-8')
-
-df_rd_spc <- read.csv(file = "C:\\Users\\marco\\OneDrive - Crefaz Financiamentos e Investimentos\\Paineis BI\\Relatorios\\PROMOBANK\\renda_pres_spc_2022.csv",sep = ",",header = TRUE,encoding = 'utf-8')
+df_rd_spc <- read.csv(file = paste0(path,"renda_pres_spc_2022.csv"),sep = ",",header = TRUE,encoding = 'utf-8')
 colnames(df_rd_spc)[1] <- "RENDAPRESUMIDA"
 
 dataframe <- dataframe %>% dplyr::distinct(CPF,`Espécie`,Dat..Nascimento,Cidade,Valor.Benefício,Líquido,.keep_all  = TRUE)
@@ -805,97 +812,97 @@ p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,
 
 # Matriz de Confusão entre Valor do Benefício Promobank e Renda Presumida (SPC)
 
-```{r,echo=FALSE}
+```{r,echo=FALSE,include=FALSE}
 
 df <- dataframe %>% dplyr::filter(Valor.Benefício < 15000)
 
 
-inputPanel(
-  textAreaInput(inputId = "bintext",label = "FAIXAS",value = string_bin)
-)
-
- renderHighchart({
-       
-        library(stringr)
-        bin_cut <- "0;5000;10000;15000;20000;25000;30000;350000"
-        string_bin <- input$bintext
-        #print(input$bintext)
-        bin_cut = str_split(bin_cut,pattern = ";") %>% as.data.frame
-        colnames(bin_cut) <- "Range"
-      
-        bin_cut <- bin_cut$Range  %>% as.integer
-        print(bin_cut)
-        
-        bin_cut <- seq(0,10500,500)
-        
-        df1     = cut(df$Valor.Benefício,breaks = bin_cut,right = T,include.lowest = F) 
-        df2     = cut(df$RENDAPRESUMIDA,  breaks = bin_cut,right = T,include.lowest = F) 
-        prop.table(table(df1,df2)) %>% apply( MARGIN = 2,FUN = cumsum)
-        prop.table(table(df1,df2)) %>% apply( MARGIN = 1,FUN = cumsum)
-        
-        df3 = table(df1,df2) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1) 
-
-        #df3 = addmargins(table(df1,df2)) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1) 
-          minn =  table(df1,df2) %>% apply(MARGIN = 2,FUN = min) %>% min
-          maxx =  table(df1,df2) %>% apply(MARGIN = 2,FUN = max) %>% max
-          # levels(df3$RENDAPRESUMIDA)[levels(df3$RENDAPRESUMIDA)=="Sum"] <- "Soma RENDAPRESUMIDA"
-          # levels(df3$Valor.Beneficio)[levels(df3$Valor.Beneficio)=="Sum"] <- "Soma Valor.Beneficio"
-        
-        # if(input$prop){
-        #   #%>% rename(`SCORE ATUAL` = df2,BVS = df1)
-        #   if(input$cumrow){
-        #     df3 = (round(prop.table(table(df1,df2)),5)*100)  %>% addmargins %>% as.data.frame 
-        #     df3 =  tapply(X = df3$Freq,INDEX = df3$df1,FUN = cumsum) %>% rename(`SCORE ATUAL` = df2,BVS = df1)
-        #     minn =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = min) %>% min
-        #     maxx =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = max) %>% max
-        #     minn = minn*100
-        #     maxx = maxx*100
-        #     
-        #     
-        #   }else{
-        #     
-        #     df3 = addmargins(round(prop.table(table(df1,df2)),5)*100) %>% as.data.frame %>% rename(`SCORE ATUAL` = df2,BVS = df1)
-        #     minn =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = min) %>% min
-        #     maxx =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = max) %>% max
-        #     minn = minn*100
-        #     maxx = maxx*100
-        #     levels(df3$BVS)[levels(df3$BVS)=="Sum"] <- "Soma BVS"
-        #     levels(df3$`SCORE ATUAL`)[levels(df3$`SCORE ATUAL`)=="Sum"] <- "Soma Atual"
-        #     
-        #   }
-        #  
-        # }else{
-        #   
-        #   df3 = addmargins(table(df1,df2)) %>% as.data.frame %>% rename(`SCORE ATUAL` = df2,BVS = df1) 
-        #   minn =  table(df1,df2) %>% apply(MARGIN = 2,FUN = min) %>% min
-        #   maxx =  table(df1,df2) %>% apply(MARGIN = 2,FUN = max) %>% max
-        #   levels(df3$BVS)[levels(df3$BVS)=="Sum"] <- "Soma BVS"
-        #   levels(df3$`SCORE ATUAL`)[levels(df3$`SCORE ATUAL`)=="Sum"] <- "Soma Atual"
-        # }
-       
-        
-        
-        coul <- heat.colors(nrow(df3))
-        coul <- c(coul,"#FFFFFF")
-        print(coul)
-        # minn =  min(table(df1,df2) %>% apply(MARGIN = 2,FUN = min))
-        # maxx =  max(table(df1,df2) %>% apply(MARGIN = 2,FUN = max))
-        cat("MAximo:",maxx, "\n\nMinimo:",minn)
-        df3
-        df3 %>%
-      hchart(type = "heatmap", hcaes(x = Valor.Beneficio, y = RENDAPRESUMIDA, value = "Freq"),dataLabels = list(enabled = TRUE)) %>%
-            hc_xAxis(reversed=FALSE,opposite = TRUE,title = list(text = "Valor.Beneficio",style=list( color= '#000000',fontWeight= 'bold', fontSize= '18px')),
-                     tickColor= 'red', labels = list(format = "{value}",
-                                                     style=list(color="black",fontSize="14px"))) %>%
-            hc_yAxis(reversed=TRUE,opposite = FALSE,title = list(text = "RENDAPRESUMIDA",style=list( color= '#000000',fontWeight= 'bold', fontSize= '18px')),
-                     tickColor= 'red', labels = list(format = "{value}",
-                                                     style=list(color="black",fontSize="14px"))) %>%
-            hc_legend(layout = "vertical", verticalAlign = "middle", align = "right",itemStyle=list(fontSize="12px",color="white")) %>%
-            hc_colorAxis(minColor =coul[nrow(df3)],
-                         maxColor = coul[1],
-                         min = minn,max=maxx
-                         )
-    })
+# inputPanel(
+#   textAreaInput(inputId = "bintext",label = "FAIXAS",value = string_bin)
+# )
+# 
+#  renderHighchart({
+# 
+#         library(stringr)
+#         bin_cut <- "0;5000;10000;15000;20000;25000;30000;350000"
+#         string_bin <- input$bintext
+#         #print(input$bintext)
+#         bin_cut = str_split(bin_cut,pattern = ";") %>% as.data.frame
+#         colnames(bin_cut) <- "Range"
+# 
+#         bin_cut <- bin_cut$Range  %>% as.integer
+# 
+# 
+#         bin_cut <- seq(0,10500,500)
+# 
+#         df1     = cut(df$Valor.Benefício,breaks = bin_cut,right = T,include.lowest = F)
+#         df2     = cut(df$RENDAPRESUMIDA,  breaks = bin_cut,right = T,include.lowest = F)
+#         prop.table(table(df1,df2)) %>% apply( MARGIN = 2,FUN = cumsum)
+#         prop.table(table(df1,df2)) %>% apply( MARGIN = 1,FUN = cumsum)
+# 
+#         df3 = table(df1,df2) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1)
+# 
+#         #df3 = addmargins(table(df1,df2)) %>% as.data.frame %>% rename(RENDAPRESUMIDA = df2,Valor.Beneficio = df1)
+#           minn =  table(df1,df2) %>% apply(MARGIN = 2,FUN = min) %>% min
+#           maxx =  table(df1,df2) %>% apply(MARGIN = 2,FUN = max) %>% max
+#           # levels(df3$RENDAPRESUMIDA)[levels(df3$RENDAPRESUMIDA)=="Sum"] <- "Soma RENDAPRESUMIDA"
+#           # levels(df3$Valor.Beneficio)[levels(df3$Valor.Beneficio)=="Sum"] <- "Soma Valor.Beneficio"
+# 
+#         # if(input$prop){
+#         #   #%>% rename(`SCORE ATUAL` = df2,BVS = df1)
+#         #   if(input$cumrow){
+#         #     df3 = (round(prop.table(table(df1,df2)),5)*100)  %>% addmargins %>% as.data.frame
+#         #     df3 =  tapply(X = df3$Freq,INDEX = df3$df1,FUN = cumsum) %>% rename(`SCORE ATUAL` = df2,BVS = df1)
+#         #     minn =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = min) %>% min
+#         #     maxx =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = max) %>% max
+#         #     minn = minn*100
+#         #     maxx = maxx*100
+#         #
+#         #
+#         #   }else{
+#         #
+#         #     df3 = addmargins(round(prop.table(table(df1,df2)),5)*100) %>% as.data.frame %>% rename(`SCORE ATUAL` = df2,BVS = df1)
+#         #     minn =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = min) %>% min
+#         #     maxx =  prop.table(table(df1,df2)) %>% apply(MARGIN = 2,FUN = max) %>% max
+#         #     minn = minn*100
+#         #     maxx = maxx*100
+#         #     levels(df3$BVS)[levels(df3$BVS)=="Sum"] <- "Soma BVS"
+#         #     levels(df3$`SCORE ATUAL`)[levels(df3$`SCORE ATUAL`)=="Sum"] <- "Soma Atual"
+#         #
+#         #   }
+#         #
+#         # }else{
+#         #
+#         #   df3 = addmargins(table(df1,df2)) %>% as.data.frame %>% rename(`SCORE ATUAL` = df2,BVS = df1)
+#         #   minn =  table(df1,df2) %>% apply(MARGIN = 2,FUN = min) %>% min
+#         #   maxx =  table(df1,df2) %>% apply(MARGIN = 2,FUN = max) %>% max
+#         #   levels(df3$BVS)[levels(df3$BVS)=="Sum"] <- "Soma BVS"
+#         #   levels(df3$`SCORE ATUAL`)[levels(df3$`SCORE ATUAL`)=="Sum"] <- "Soma Atual"
+#         # }
+# 
+# 
+# 
+#         coul <- heat.colors(nrow(df3))
+#         coul <- c(coul,"#FFFFFF")
+#         print(coul)
+#         # minn =  min(table(df1,df2) %>% apply(MARGIN = 2,FUN = min))
+#         # maxx =  max(table(df1,df2) %>% apply(MARGIN = 2,FUN = max))
+#         cat("MAximo:",maxx, "\n\nMinimo:",minn)
+#         df3
+#         df3 %>%
+#       hchart(type = "heatmap", hcaes(x = Valor.Beneficio, y = RENDAPRESUMIDA, value = "Freq"),dataLabels = list(enabled = TRUE)) %>%
+#             hc_xAxis(reversed=FALSE,opposite = TRUE,title = list(text = "Valor.Beneficio",style=list( color= '#000000',fontWeight= 'bold', fontSize= '18px')),
+#                      tickColor= 'red', labels = list(format = "{value}",
+#                                                      style=list(color="black",fontSize="14px"))) %>%
+#             hc_yAxis(reversed=TRUE,opposite = FALSE,title = list(text = "RENDAPRESUMIDA",style=list( color= '#000000',fontWeight= 'bold', fontSize= '18px')),
+#                      tickColor= 'red', labels = list(format = "{value}",
+#                                                      style=list(color="black",fontSize="14px"))) %>%
+#             hc_legend(layout = "vertical", verticalAlign = "middle", align = "right",itemStyle=list(fontSize="12px",color="white")) %>%
+#             hc_colorAxis(minColor =coul[nrow(df3)],
+#                          maxColor = coul[1],
+#                          min = minn,max=maxx
+#                          )
+#     })
 
 
 ```
@@ -903,7 +910,7 @@ inputPanel(
 
 
 
-```{r}
+```{r,echo=FALSE}
 
 
  # bin_cut <- "0;5000;10000;15000;20000;25000;30000;350000"
@@ -919,8 +926,8 @@ inputPanel(
         
         df1     = cut(df$Valor.Benefício,breaks = bin_cut,right = T,include.lowest = F) 
         df2     = cut(df$RENDAPRESUMIDA,  breaks = bin_cut,right = T,include.lowest = F) 
-        prop.table(table(df1,df2)) %>% apply( MARGIN = 2,FUN = cumsum)
-        prop.table(table(df1,df2)) %>% apply( MARGIN = 1,FUN = cumsum)
+        # prop.table(table(df1,df2)) %>% apply( MARGIN = 2,FUN = cumsum)
+        # prop.table(table(df1,df2)) %>% apply( MARGIN = 1,FUN = cumsum)
         l1 <- levels(df1) %>% unique
         l2 <- levels(df2) %>% unique
         
