@@ -1,15 +1,29 @@
 ---
-title: "Estudo PromoBank"
-output: 
+output:
   html_document:
     toc: true
     toc_depth: 2
     number_sections: true
 runtime: shiny
-
+# title: "Estudo Probank"
+# output:
+#   flexdashboard::flex_dashboard:
+#     orientation: columns
+#     social: menu
+#     source_code: embed
+# runtime: shiny
 ---
 
+<style type="text/css">
+.main-container {
+  max-width: 1920px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
 ```{r setup, include=FALSE}
+rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE)
 library(stringr)
 library(dplyr)
@@ -28,6 +42,30 @@ library(shinyWidgets)
 library(viridis)
 library(rdrop2)
 library(plotly)
+
+  axis.theme <- function(x.angle = 0,vjust=0,hjust=0.5,pos_leg="top",textsize = 10,lengend_title_size = 10,lengend_text_size = 8,title_size = 16){
+  
+  
+  theme_bw()  +
+    theme(
+      axis.text.x = element_text(angle = x.angle,face = "bold",size = textsize,hjust=hjust, vjust=vjust),
+      axis.text.y = element_text(angle = 0,face = "bold",size = textsize),
+      legend.background = element_rect(fill = "transparent", colour = NA,size = 2),
+      panel.background = element_rect(fill = "transparent", colour = NA),
+      plot.background = element_rect(fill = "white", colour = NA),
+      axis.title.x = element_text(colour = "black",size = textsize,face = "bold"),
+      axis.title.y = element_text(colour = "black",size = textsize,face = "bold"),
+      legend.title = element_text(colour = "black",size = lengend_title_size),
+      legend.position = pos_leg,
+      legend.text = element_text(colour = "black",size = lengend_text_size,face = "bold"),
+      panel.grid = element_line(linetype="dashed"),
+      panel.grid.major = element_line(colour = "gray"),
+      title =element_text(size=title_size, face='bold',hjust = 0.5),
+      plot.title = element_text(hjust = 0.5),
+      axis.title = element_text(color="#000000", face="bold", size=textsize,lineheight = 2))
+  
+}
+
 
 if(str_detect(string = getwd(),pattern = "marco")){
   
@@ -196,18 +234,16 @@ Segue base de aposentados enriquecida pela Promobank, favor elaborar um estudo d
 
 * **Espera-se com estudo reavaliar e definir novos cortes de valores para esta classe.**
 
+# RENDAS 
+
 
 # RENDAPRESUMIDA
 
 ```{r , echo=FALSE}
 
 layout <- list(
-  font = list(size = 18), 
-  title = "Distribuição RENDAPRESUMIDA", 
-  #width = 1099, 
+  title = NULL,
   xaxis = list(
-    #type = "log", 
-    #range = c(0.30102999566398114, 2.6989700043360183), 
     ticks = "outside", 
     title = "RENDAPRESUMIDA", 
     nticks = 5, 
@@ -248,7 +284,8 @@ inputPanel(
 fluidRow(column(width = 12,br(),br(),
                 renderPlotly({
   df <- dataframe %>% dplyr::filter( (RENDAPRESUMIDA >=  input$range_rend_pres[1]) & (RENDAPRESUMIDA < input$range_rend_pres[2]))
- trace1 <- list(
+
+   trace1 <- list(
   name = "RENDAPRESUMIDA", 
   type = "histogram", 
   x = df$RENDAPRESUMIDA
@@ -274,11 +311,11 @@ colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')
 p <- plot_ly(width = 980,margin = m)
 p <- add_trace(p,  name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
 p <- add_trace(p,  name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
-p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p <- layout(p, font=layout$font, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
 p_box <- plot_ly(x = df$RENDAPRESUMIDA, type = "box", name = "Box-Plot")
-p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p_box <- layout(p_box, font=layout$font,  width=layout$width,  height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
  ss <- subplot(
@@ -298,13 +335,13 @@ p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,
 ```
 
 
+
 # Valor.Benefício
 
 ```{r , echo=FALSE}
 
 layout <- list(
-  font = list(size = 18), 
-  title = "Distribuição Valor.Benefício", 
+  title = NULL, 
   #width = 1099, 
   xaxis = list(
     #type = "log", 
@@ -377,11 +414,11 @@ colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')
 p <- plot_ly(width = 980,margin = m)
 p <- add_trace(p, uid=trace1$uid, name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
 p <- add_trace(p, uid=trace2$uid, name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
-p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p <- layout(p, font=layout$font, width=layout$width, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
 p_box <- plot_ly(x = df$Valor.Benefício, type = "box", name = "Box-Plot")
-p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p_box <- layout(p_box, font=layout$font, width=layout$width, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
  ss <- subplot(
@@ -479,11 +516,11 @@ colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')
 p <- plot_ly(width = 980,margin = m)
 p <- add_trace(p, uid=trace1$uid, name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
 p <- add_trace(p, uid=trace2$uid, name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
-p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p <- layout(p, font=layout$font, title=layout$title, width=layout$width,yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
 p_box <- plot_ly(x = df$Líquido, type = "box", name = "Box-Plot")
-p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,  height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
  ss <- subplot(
@@ -501,6 +538,9 @@ p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,
 
 
 ```
+
+
+
 
 # Valor.Consignado
 
@@ -581,11 +621,11 @@ colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')
 p <- plot_ly(width = 980,margin = m)
 p <- add_trace(p, uid=trace1$uid, name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
 p <- add_trace(p, uid=trace2$uid, name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
-p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p <- layout(p, font=layout$font, title=layout$title, width=layout$width, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
 p_box <- plot_ly(x = df$Valor.Consignado, type = "box", name = "Box-Plot")
-p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,  height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
  ss <- subplot(
@@ -609,9 +649,6 @@ p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,
 ```{r , echo=FALSE}
 
 layout <- list(
-  font = list(size = 16), 
-  title = "Distribuição Margem.Consignável", 
-  #width = 1099, 
   xaxis = list(
     #type = "log", 
     #range = c(0.30102999566398114, 2.6989700043360183), 
@@ -683,11 +720,11 @@ colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')
 p <- plot_ly(width = 980,margin = m)
 p <- add_trace(p, uid=trace1$uid, name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
 p <- add_trace(p, uid=trace2$uid, name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
-p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p <- layout(p, font=layout$font, title=layout$title, width=layout$width,  yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
 p_box <- plot_ly(x = df$Margem.Consignável, type = "box", name = "Box-Plot")
-p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
  ss <- subplot(
@@ -711,9 +748,6 @@ p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,
 ```{r , echo=FALSE}
 
 layout <- list(
-  font = list(size = 16), 
-  title = "Distribuição Margem.Disponível", 
-  #width = 1099, 
   xaxis = list(
     #type = "log", 
     #range = c(0.30102999566398114, 2.6989700043360183), 
@@ -785,11 +819,11 @@ colors <- c('#273658', '#E4781C', '#652B91', '#4CC48F')
 p <- plot_ly(width = 980,margin = m)
 p <- add_trace(p, uid=trace1$uid, name=trace1$name, type=trace1$type, x=trace1$x,marker = list(color = colors[1]))
 p <- add_trace(p, uid=trace2$uid, name=trace2$name, type=trace2$type,mode = trace2$mode,fill=trace2$fill,yaxis = trace2$yaxis, x=trace2$x, y=trace2$y,marker = list(color = colors[2]))
-p <- layout(p, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p <- layout(p, font=layout$font, title=layout$title, width=layout$width, yaxis=layout$yaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
 p_box <- plot_ly(x = df$Margem.Disponível, type = "box", name = "Box-Plot")
-p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width, xaxis=layout$xaxis, height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
+p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,  height=layout$height, autosize=layout$autosize, yaxis2 = layout$yaxis2,hovermode = "compare"
             #margin = list( pad = 50, b = 90, l = 130, r = 50 )
             )
  ss <- subplot(
@@ -813,9 +847,7 @@ p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,
 # Matriz de Confusão entre Valor do Benefício Promobank e Renda Presumida (SPC)
 
 
-
-
-```{r,echo=FALSE,include=FALSE}
+```{r,echo=FALSE,include=FALSE, warning=FALSE}
 
 # 
 #  # bin_cut <- "0;5000;10000;15000;20000;25000;30000;350000"
@@ -883,63 +915,33 @@ p_box <- layout(p_box, font=layout$font, title=layout$title, width=layout$width,
 ```
 
 
-```{r,echo=FALSE}
+<div>
+```{r,echo=FALSE, warning=FALSE,message=FALSE}
 
 
 library(arules)
 library(multdiscretization)
 library(dplyr)
 library(ggplot2)
-    df <- dataframe %>% dplyr::filter(Valor.Benefício < 15000)
-        bin_cut <- seq(0,15500,500)
+   
+inputPanel(numericInput(inputId = "cut_renda",label = "Corte da Renda",min = 0,value = 10000,max = 60000),
+           numericInput(inputId = "step",label = "Corte da Renda",min = 0,value = 250,max = 1000))
+
+renderPlotly({
+  
+  df <- dataframe %>% dplyr::filter(Valor.Benefício < input$cut_renda)
+   
+        bin_cut <- seq(0,input$cut_renda,input$step)
         
         df1     = cut(df$Valor.Benefício,breaks = bin_cut,right = T,include.lowest = F) 
         df2     = cut(df$RENDAPRESUMIDA,  breaks = bin_cut,right = T,include.lowest = F) 
-        # prop.table(table(df1,df2)) %>% apply( MARGIN = 2,FUN = cumsum)
-        # prop.table(table(df1,df2)) %>% apply( MARGIN = 1,FUN = cumsum)
         l1 <- levels(df1) %>% unique
         l2 <- levels(df2) %>% unique
-        
         tab <- table(Valor.Beneficio = df1,RENDAPRESUMIDA = df2)
-        cm  <- matrix(data = tab,nrow = 31,ncol = 31)
-axis.theme <- function(x.angle = 0,vjust=0,hjust=0.5,pos_leg="top",textsize = 10,lengend_title_size = 10,lengend_text_size = 8,title_size = 16){
-  
-  
-  theme_bw()  +
-    theme(
-      axis.text.x = element_text(angle = x.angle,face = "bold",size = textsize,hjust=hjust, vjust=vjust),
-      axis.text.y = element_text(angle = 0,face = "bold",size = textsize),
-      legend.background = element_rect(fill = "transparent", colour = NA,size = 2),
-      panel.background = element_rect(fill = "transparent", colour = NA),
-      plot.background = element_rect(fill = "white", colour = NA),
-      axis.title.x = element_text(colour = "black",size = textsize,face = "bold"),
-      axis.title.y = element_text(colour = "black",size = textsize,face = "bold"),
-      legend.title = element_text(colour = "black",size = lengend_title_size),
-      legend.position = pos_leg,
-      legend.text = element_text(colour = "black",size = lengend_text_size,face = "bold"),
-      panel.grid = element_line(linetype="dashed"),
-      panel.grid.major = element_line(colour = "gray"),
-      title =element_text(size=title_size, face='bold',hjust = 0.5),
-      plot.title = element_text(hjust = 0.5),
-      axis.title = element_text(color="#000000", face="bold", size=textsize,lineheight = 2))
-  
-}
+        # cm  <- matrix(data = tab,nrow = 31,ncol = 31)
 
-
-
-
-# 
-# 
-# class_seq <- seq(0,1000,50)
-# 
-# df_matrix_0  <- df_scores %>% dplyr::select(c("SCORE_SCR","SCORE_SPC")) 
-# df_matrix_0$SPC_CLASS   <- arules::discretize(df_matrix_0$SCORE_SPC,    method = "fixed",labels = NULL, breaks = class_seq)
-# 
-# 
-# 
-# 
-# df_matrix_0$SCR_CLASS <- arules::discretize(df_matrix_0$SCORE_SCR,  method = "fixed",labels = NULL, breaks = class_seq)
-
+        
+      
 
 
 
@@ -955,78 +957,78 @@ p_dist <- ggplot(cf_matrix, aes(x = Valor.Beneficio, y = RENDAPRESUMIDA, fill = 
   scale_fill_gradient(low = "darkblue", high = "red",name = "UVI") +
   axis.theme(pos_leg = "none",textsize = 8,title_size = 10,x.angle = 45,vjust= -0.5,hjust=0)
 
-
-
-renderPlot({
   
-p_dist
+ggplotly(p_dist)
   
 })
 
 
 
-
 ```
+
+</div>
 
 # Acumulado
 
-```{r,echo=FALSE,include=FALSE}
 
-# df_score$PREDICT <- 1-(df_score$SCORE/1000)
-# df_score$PREDICT_INV <- (df_score$SCORE/1000)
-df_bons <- df$Valor.Benefício
+
+<div>
+```{r, echo=FALSE, warning=FALSE}
+
+inputPanel(numericInput(inputId = "cut_renda1",label = "Corte da Renda",min = 0,value = 10000,max = 60000))
+
+renderPlotly({
+  df <- dataframe %>% dplyr::filter(Valor.Benefício < input$cut_renda1)
+  df_bons <- df$Valor.Benefício
 df_maus <- df$RENDAPRESUMIDA
 
-seq_score <- eq(0,15500,1)
+#seq_score <- seq(0,as.numeric(input$cut_renda1),1)
+seq_score <- seq(0,10500,1)
 
 v_bons <- df_bons %>% sort
 v_maus <- df_maus %>% sort
+
 cumvalbom <- c()
 for(i  in 1:length(seq_score)){
 
- cumvalbom[i] <- ( (v_bons < seq_score[i]) %>% mean)
+ cumvalbom[i] <- ( (v_bons < seq_score[i]) %>% mean(na.rm = TRUE))
 
 
 }
 cumvalmau <- c()
 for(i  in 1:length(seq_score)){
 
-  cumvalmau[i] <- ( (v_maus < seq_score[i]) %>% mean)
+  cumvalmau[i] <- ( (v_maus < seq_score[i]) %>% mean(na.rm = TRUE))
 
 
 }
  
 df_acumulado <- data.frame(SCORE = seq_score,`Acumulado Bom` = cumvalbom,`Acumulado Mau` = cumvalmau)
+  
+
 
 # v_bons <- df_bons %>% dplyr::arrange(PREDICT_INV) %>% dplyr::select(PREDICT_INV)
 # v_maus <- df_maus %>% dplyr::arrange(PREDICT_INV) %>% dplyr::select(PREDICT_INV)
 # cumvalbom <- c()
 # for(i  in 1:length(seq_score)){
-# 
+#
 #   cumvalbom[i] <- ( (v_bons < seq_score[i]) %>% mean)
-# 
-# 
+#
+#
 # }
 # cumvalmau <- c()
 # for(i  in 1:length(seq_score)){
-# 
+#
 #   cumvalmau[i] <- ( (v_maus < seq_score[i]) %>% mean)
-# 
-# 
+#
+#
 # }
-# 
+#
 # df_acumulado$`Acumulado Bom_Inv` <- cumvalbom
 # df_acumulado$`Acumulado Mau_Inv` <- cumvalmau
 
 
-
-
-
-
-
 #df_melt <- df_acumulado %>% reshape2::melt(id.vars = "SCORE",measure.vars = c("Acumulado Bom_Inv","Acumulado Mau_Inv"),value.name = "Acumulado (%)",variable.name= "Legenda")
-
-
 
 # p2 <- ggplot(data = df_melt)+
 #   geom_line(size = 1.2, alpha = 0.75,aes(x= SCORE, y = `Acumulado (%)`, color = Legenda))+
@@ -1036,23 +1038,20 @@ df_acumulado <- data.frame(SCORE = seq_score,`Acumulado Bom` = cumvalbom,`Acumul
 #   axis.theme(title_size = 12,textsize = 12,pos_leg = "bottom",x.angle = 45,vjust = 1,hjust=1);p2
 
 
-df_acumulado$Acumulado.Bom
-
-
-df_acumulado$Diff_Acumulado = abs(df_acumulado$Acumulado.Bom - df_acumulado$Acumulado.Mau)
-#df_acumulado$Diff_Acumulado_Inv = abs(df_acumulado$Acumulado.Bom - (1-df_acumulado$Acumulado.Mau))
-df_acumulado$max_diff       = max(df_acumulado$Diff_Acumulado)
-df_acumulado$cutoff         = df_acumulado$SCORE[which.max(df_acumulado$Diff_Acumulado)]
-df_acumulado$maxbom         = df_acumulado$Acumulado.Bom[which.max(df_acumulado$Diff_Acumulado)]
-df_acumulado$maxmau         = df_acumulado$Acumulado.Mau[which.max(df_acumulado$Diff_Acumulado)]
-#df_acumulado$cutoff_balanced       = df_acumulado$SCORE[which.min(df_acumulado$Diff_Acumulado_Inv)]
+df_acumulado$Diff_Acumulado          = abs(df_acumulado$Acumulado.Bom - df_acumulado$Acumulado.Mau)
+#df_acumulado$Diff_Acumulado_Inv     = abs(df_acumulado$Acumulado.Bom - (1-df_acumulado$Acumulado.Mau))
+df_acumulado$max_diff                = max(df_acumulado$Diff_Acumulado)
+df_acumulado$cutoff                  = df_acumulado$SCORE[which.max(df_acumulado$Diff_Acumulado)]
+df_acumulado$maxbom                  = df_acumulado$Acumulado.Bom[which.max(df_acumulado$Diff_Acumulado)]
+df_acumulado$maxmau                  = df_acumulado$Acumulado.Mau[which.max(df_acumulado$Diff_Acumulado)]
+#df_acumulado$cutoff_balanced        = df_acumulado$SCORE[which.min(df_acumulado$Diff_Acumulado_Inv)]
 
 df_melt <- df_acumulado %>% reshape2::melt(id.vars = "SCORE",measure.vars = c("Acumulado.Bom","Acumulado.Mau","Diff_Acumulado"),value.name = "Acumulado (%)",variable.name= "Legenda")
 
 p1 <- ggplot(data = df_melt)+
   geom_line(size = 1.2, alpha = 0.75,aes(x= SCORE, y = `Acumulado (%)`, color = Legenda))+
   scale_color_manual(values = c("darkgreen", "darkred","darkblue"))+
-  scale_x_continuous(breaks = seq(0,1*15500,0.05*15500))+
+  scale_x_continuous(breaks = seq(0,1*input$cut_renda1,0.05*input$cut_renda1))+
   scale_y_continuous(breaks = seq(0,1,0.1))+
   axis.theme(title_size = 12,textsize = 12,pos_leg = "bottom",x.angle = 45,vjust = 1,hjust=1)+
   geom_vline(xintercept = df_acumulado$cutoff,
@@ -1070,27 +1069,15 @@ p1 <- ggplot(data = df_melt)+
            y = max(df_acumulado$maxmau) + max(df_acumulado$max_diff)/2, label=paste0("KS.: ",round(df_acumulado$max_diff,3),"\nCutoff:",df_acumulado$cutoff),
            color="black")
 
-p1
+ggplotly(p1)
+
+
+})
+
+
 
 
 
 ```
 
-
-
-# KS
-
-```{r,echo=FALSE}
-
-ks <- ks.test(x = df$Valor.Benefício,y = df$RENDAPRESUMIDA)
-
- renderUI({
-       
-        p(ks$p.value,br(), " Teste Kolmogorov-Smirnov",style="color:#273658;text-align:center;font-weight:bold;font-size:30px")
-        
-      })
-
-```
-Aqui sera apresentado o teste de kS.
-
-
+</div>
